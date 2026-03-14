@@ -10,16 +10,9 @@ const courses = [
   {
     group: "Kurslar",
     items: [
-      { name: "Çelik Yapı Tasarımı", students: "850+", rating: "4.9", level: "İleri", isNew: true },
-      { name: "Betonarme Tasarımı", students: "1200+", rating: "4.8", level: "Orta" },
-      { name: "Ahşap Yapı Tasarımı", students: "400+", rating: "4.9", level: "Orta" },
-    ]
-  },
-  {
-    group: "Paketler",
-    items: [
-      { name: "Yapısal Tasarım Paketi (3 Kurs)", students: "300+", rating: "4.8", level: "Orta" },
-      { name: "Performans Analizi Paketi", students: "140+", rating: "4.9", level: "İleri" },
+      { name: "Çelik Yapı Tasarımı", category: "Yapısal Tasarım", isNew: true },
+      { name: "Betonarme Tasarımı", category: "Yapısal Tasarım" },
+      { name: "Ahşap Yapı Tasarımı", category: "Yapısal Tasarım" },
     ]
   }
 ];
@@ -52,11 +45,6 @@ export default function Navbar() {
   const [mobCategory, setMobCategory] = useState("");
   const [mobLevel, setMobLevel] = useState("");
 
-  // Hide navbar on auth pages
-  if (pathname === '/login' || pathname === '/register') {
-    return null;
-  }
-
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
     if (mobileOpen) {
@@ -66,6 +54,11 @@ export default function Navbar() {
     }
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
+
+  // Hide navbar on auth pages
+  if (pathname === '/login' || pathname === '/register') {
+    return null;
+  }
 
   const menuItems = [
     { name: 'Kurslar', hasMegaMenu: true, href: '/kurslar' },
@@ -130,9 +123,7 @@ export default function Navbar() {
                                           {course.isNew && <span className="mega-course-badge">Yeni</span>}
                                         </div>
                                         <div className="mega-course-meta">
-                                          <span><Users size={11} /> {course.students}</span>
-                                          <span><Star size={11} fill="currentColor" /> {course.rating}</span>
-                                          <span>{course.level}</span>
+                                          <span><Layers size={11} /> {course.category}</span>
                                         </div>
                                       </div>
                                     </li>

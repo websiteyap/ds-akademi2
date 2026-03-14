@@ -43,7 +43,7 @@ export default function NotFound() {
             </svg>
             Ana Sayfaya Dön
           </Link>
-          <Link href="/#courses" className="notfound-btn-secondary">
+          <Link href="/kurslar" className="notfound-btn-secondary">
             Kursları Keşfet
           </Link>
         </div>

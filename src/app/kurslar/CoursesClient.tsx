@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import Breadcrumb from "@/components/Breadcrumb";
 import {
   Search,
   Grid,
@@ -61,6 +62,7 @@ export default function CoursesClient() {
 
   return (
     <section className="courses-page">
+      <Breadcrumb items={[{ label: 'Kurslar' }]} />
       {/* Page Header */}
       <div className="courses-page-header">
         <div className="container">

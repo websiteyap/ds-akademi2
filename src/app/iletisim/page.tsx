@@ -5,10 +5,12 @@ export const metadata: Metadata = {
   title: 'İletişim | DS Akademi',
   description: 'DS Akademi ile iletişime geçin. Sorularınız, önerileriniz ve kurumsal eğitim talepleriniz için bize ulaşın.',
 };
+import Breadcrumb from '@/components/Breadcrumb';
 
 export default function ContactPage() {
   return (
     <main>
+      <Breadcrumb items={[{ label: 'İletişim' }]} />
       {/* Hero Banner */}
       <section className="page-hero">
         <div className="hero-bg-elements">

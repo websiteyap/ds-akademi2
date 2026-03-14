@@ -141,11 +141,27 @@ export default function Footer() {
             </div>
           </address>
 
-          {/* Çalışma Saatleri */}
-          <div className="footer-hours">
-            <h5 className="footer-hours-title">Çalışma Saatleri</h5>
-            <p>Pazartesi - Cuma: 09:00 - 18:00</p>
-            <p>Cumartesi: 10:00 - 14:00</p>
+          {/* Güvenli Ödeme */}
+          <div className="footer-payment" style={{ marginTop: '2.5rem' }}>
+            <h5 className="footer-hours-title">Güvenli Ödeme</h5>
+            <div className="payment-logos-wrap" style={{ marginTop: '0.5rem' }}>
+              <Image 
+                src="/logo_band_white@1X.png" 
+                alt="Güvenli Ödeme" 
+                width={200} 
+                height={35} 
+                style={{ objectFit: 'contain' }}
+                className="payment-logo dark-only"
+              />
+              <Image 
+                src="/logo_band_colored@1X.png" 
+                alt="Güvenli Ödeme" 
+                width={200} 
+                height={35} 
+                style={{ objectFit: 'contain' }}
+                className="payment-logo light-only"
+              />
+            </div>
           </div>
         </div>
 

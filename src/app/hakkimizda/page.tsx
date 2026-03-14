@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Target, BookOpen, Users, Award, ShieldCheck, Cpu, Clock, TrendingUp } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -36,10 +37,12 @@ const values = [
     desc: 'Eğitimlerimizi başarıyla tamamlayan katılımcılara tanınmış sertifikalar ve kariyer desteği sağlıyoruz.',
   },
 ];
+import Breadcrumb from '@/components/Breadcrumb';
 
 export default function AboutPage() {
   return (
     <main>
+      <Breadcrumb items={[{ label: 'Hakkımızda' }]} />
       {/* Hero Banner */}
       <section className="page-hero">
         <div className="hero-bg-elements">
@@ -137,8 +140,8 @@ export default function AboutPage() {
           <h2>Kariyerinize Yön Vermeye Hazır Mısınız?</h2>
           <p>Türkiye'nin en kapsamlı yapısal mühendislik eğitim platformuna katılın.</p>
           <div className="about-cta-buttons">
-            <a href="/#courses" className="about-cta-primary">Eğitimleri Keşfet</a>
-            <a href="/iletisim" className="about-cta-secondary">Bize Ulaşın</a>
+            <Link href="/kurslar" className="about-cta-primary">Eğitimleri Keşfet</Link>
+            <Link href="/iletisim" className="about-cta-secondary">Bize Ulaşın</Link>
           </div>
         </div>
       </section>
