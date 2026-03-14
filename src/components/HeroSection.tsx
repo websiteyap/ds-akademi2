@@ -1,8 +1,9 @@
 "use client";
 
 import React from 'react';
-import { Play, ArrowRight, Star, BadgeCheck } from 'lucide-react';
+import { Play, ArrowRight, Star, BadgeCheck, GraduationCap } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const col1 = [
   { id: 1, name: "Doç. Dr. Onur Şeker", course: "Çelik Yapı Tasarımı", img: "/instructor-onur.png" },
@@ -44,24 +45,21 @@ export default function HeroSection() {
           </p>
           
           <div className="hero-actions">
-            <button className="primary-btn">
+            <Link href="/kurslar" className="primary-btn" style={{ textDecoration: 'none' }}>
               Eğitimlere Göz At
               <ArrowRight size={18} />
-            </button>
-            <button className="secondary-btn">
+            </Link>
+            <a href="#instructors" className="secondary-btn" style={{ textDecoration: 'none' }}>
               <span className="play-icon-wrapper">
-                <Play size={16} fill="currentColor" />
+                <GraduationCap size={16} />
               </span>
-              Tanıtım Videosu
-            </button>
+              Uzman Kadromuz
+            </a>
           </div>
           
           <div className="hero-trust">
-            <div className="hero-avatars">
-              <div className="avatar-circle"></div>
-              <div className="avatar-circle"></div>
-              <div className="avatar-circle"></div>
-              <div className="avatar-circle"></div>
+            <div className="hero-avatars" style={{ background: 'rgba(0,0,0,0.05)', padding: '0.5rem', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <BadgeCheck size={24} color="var(--accent-color, #3b82f6)" />
             </div>
             <div className="hero-trust-text">
               <div className="stars">
@@ -71,15 +69,16 @@ export default function HeroSection() {
                 <Star size={14} fill="#FFB800" color="#FFB800" />
                 <Star size={14} fill="#FFB800" color="#FFB800" />
               </div>
-              <span><strong>1,200+</strong> mühendis katıldı</span>
+              <span><strong>Akademik Düzeyde</strong> Eğitim İçerikleri</span>
             </div>
           </div>
         </div>
 
         {/* RIGHT COLUMN: ASYMMETRIC SCROLLING CARDS */}
-        <div className="hero-visuals">
-          <div className="hero-scroll-track slow-scroll">
-            {col1.map((item, idx) => (
+        <div className="hero-visuals-wrapper">
+          <div className="hero-visuals">
+            <div className="hero-scroll-track slow-scroll">
+            {[...col1, ...col1, ...col1, ...col1].map((item, idx) => (
               <div className="hero-instructor-card" key={`c1-${idx}`}>
                 <BadgeCheck className="hero-card-badge" size={20} fill="var(--accent-color)" stroke="#fff" />
                 <div className="hero-card-img-wrapper">
@@ -93,7 +92,7 @@ export default function HeroSection() {
             ))}
           </div>
           <div className="hero-scroll-track fast-scroll">
-            {col2.map((item, idx) => (
+            {[...col2, ...col2, ...col2, ...col2].map((item, idx) => (
               <div className="hero-instructor-card" key={`c2-${idx}`}>
                 <BadgeCheck className="hero-card-badge" size={20} fill="var(--accent-color)" stroke="#fff" />
                 <div className="hero-card-img-wrapper">
@@ -105,6 +104,7 @@ export default function HeroSection() {
                 </div>
               </div>
             ))}
+          </div>
           </div>
         </div>
 

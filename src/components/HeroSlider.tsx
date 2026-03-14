@@ -2,74 +2,9 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight, MapPin, Layers, Clock, User } from 'lucide-react';
-
-const courses = [
-  {
-    id: 1,
-    title: "DS-101 TEMEL ÇELİK YAPI TASARIMI",
-    image: "/DS-101-TEMEL-ÇELİK-YAPI-TASARIMI-EĞİTİMİ.jpg",
-    instructor: "Doç. Dr. Onur Şeker",
-    category: "Çelik Yapı Tasarımı",
-    duration: "4 Hafta"
-  },
-  {
-    id: 2,
-    title: "DS-102 TEMEL BETONARME YAPI TASARIMI",
-    image: "/DS-102-TEMEL-BETONARME-YAPI-TASARIMI.jpg",
-    instructor: "Dr. Öğr. Üyesi Ülgen Mert",
-    category: "Betonarme Yapı",
-    duration: "4 Hafta"
-  },
-  {
-    id: 3,
-    title: "DS-201 DD ÇELİK YAPI TASARIMI",
-    image: "/DS-201-DEPREME-DAYANIKLI-ÇELİK-YAPI-TASARIMI-EĞİTİMİ.jpg",
-    instructor: "Doç. Dr. Onur Şeker",
-    category: "Çelik Yapı Tasarımı",
-    duration: "6 Hafta"
-  },
-  {
-    id: 4,
-    title: "DS-202 DD BETONARME YAPI TASARIMI",
-    image: "/DS-202-DEPREME-DAYANIKLI-BETONARME-YAPI-TASARIMI-EĞİTİMİ.jpg",
-    instructor: "Dr. Öğr. Üyesi Ülgen Mert",
-    category: "Betonarme Yapı",
-    duration: "6 Hafta"
-  },
-  {
-    id: 5,
-    title: "DS-301 PD ÇELİK YAPI TASARIMI",
-    image: "/DS-301-PERFORMANSA-DAYALI-ÇELİK-YAPI-TASARIMI-EĞİTİMİ.jpg",
-    instructor: "Doç. Dr. Onur Şeker",
-    category: "Performans Analizi",
-    duration: "8 Hafta"
-  },
-  {
-    id: 6,
-    title: "DS-302 MEVCUT BETONARME DEĞERLENDİRME",
-    image: "/DS-302-MEVCUT-BETONARME-YAPILARIN-DEĞERLENDİRİLMESİ-VE-PERFORMANS-ANALİZİ-EĞİTİMİ.jpg",
-    instructor: "Dr. Öğr. Üyesi Ülgen Mert",
-    category: "Performans Analizi",
-    duration: "8 Hafta"
-  },
-  {
-    id: 7,
-    title: "DS-401 YAPISAL AHŞAP TASARIM",
-    image: "/DS-401-YAPISAL-AHŞAP-TASARIM-EĞİTİMİ.jpg",
-    instructor: "Ömer Asım Şişman & Çağatay Demirci",
-    category: "Ahşap Tasarımı",
-    duration: "4 Hafta"
-  },
-  {
-    id: 8,
-    title: "DS-501 BIM TEORİK VE UYGULAMA",
-    image: "/DS-501-BİNA-BİLGİ-MODELLEME-(BIM)-TEORİK-VE-UYGULAMA-EĞİTİMİ.jpg",
-    instructor: "Doç. Dr. Sevilay Demirkesen Çakır",
-    category: "BIM",
-    duration: "6 Hafta"
-  }
-];
+import Link from 'next/link';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { courses } from '@/data/courses';
 
 export default function HeroSlider() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -120,18 +55,14 @@ export default function HeroSlider() {
               priority={index === currentIndex || slideClass.includes('prev') || slideClass.includes('next')}
             />
             <div className="slide-content">
-              <h2 className="slide-title">{course.title}</h2>
-              
-              <div className="slide-meta-row">
-                <Layers size={16} className="icon-accent" /> <strong>{course.category}</strong>
-              </div>
-              
               <div className="slide-meta-bottom">
-                <div className="date-time-box">
-                  <span className="meta-item"><User size={14} /> Eğitimci: {course.instructor}</span>
-                  <span className="meta-item"><Clock size={14} /> Süre: {course.duration}</span>
-                </div>
-                <button className="slide-btn">KURSA KATIL</button>
+                {slideClass === 'slide active' ? (
+                  <Link href={`/kurslar/${course.slug}`} className="slide-btn" style={{ textDecoration: 'none' }}>
+                    KURSA KATIL
+                  </Link>
+                ) : (
+                  <button className="slide-btn">KURSA KATIL</button>
+                )}
               </div>
             </div>
           </div>

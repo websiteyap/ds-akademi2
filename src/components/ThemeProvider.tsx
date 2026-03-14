@@ -22,10 +22,18 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     const saved = localStorage.getItem('ds-theme') as Theme | null;
-    if (saved === 'light' || saved === 'dark') {
-      setTheme(saved);
-      document.documentElement.setAttribute('data-theme', saved);
-    }
+    
+    // Otomatik saat kontrolü: 20:00 - 08:00 arası dark mode, geri kalan aydınlık.
+    const hour = new Date().getHours();
+    const isNightTime = hour >= 20 || hour < 8;
+    const autoTheme = isNightTime ? 'dark' : 'light';
+    
+    // Eğer kullanıcı daha önce elle değiştirmişse onu kullanalım, yoksa saate göre
+    const finalTheme = saved ? saved : autoTheme;
+    
+    setTheme(finalTheme);
+    document.documentElement.setAttribute('data-theme', finalTheme);
+    
     setMounted(true);
   }, []);
 
