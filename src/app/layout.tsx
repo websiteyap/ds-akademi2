@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import FilterBar from "@/components/FilterBar";
 import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
+import GlobalLoading from "@/components/GlobalLoading";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,13 +28,37 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Inject script to prevent dark mode/light mode FOUC (Flash of unstyled content)
+  // This runs synchronously before the DOM paints, checking localStorage or falling back to time.
+  const themeScript = `
+    (function() {
+      try {
+        var saved = localStorage.getItem('ds-theme');
+        var autoTheme = 'light';
+        if (!saved) {
+          var hour = new Date().getHours();
+          var isNightTime = hour >= 20 || hour < 8;
+          autoTheme = isNightTime ? 'dark' : 'light';
+        }
+        var finalTheme = saved ? saved : autoTheme;
+        document.documentElement.setAttribute('data-theme', finalTheme);
+      } catch (e) {}
+    })();
+  `;
+
   return (
     <html lang="tr" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
+        <GlobalLoading />
         <ThemeProvider>
           <Navbar />
           <FilterBar />
-          {children}
+          <main id="main-content">
+            {children}
+          </main>
           <Footer />
           <ScrollToTop />
         </ThemeProvider>

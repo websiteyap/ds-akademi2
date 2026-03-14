@@ -3,34 +3,21 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { User, Menu, X, Sun, Moon, ChevronDown, ChevronRight, Star, Users, BarChart3, Search, Grid, Layers, Linkedin, Instagram, Twitter } from 'lucide-react';
+import { User, Menu, X, Sun, Moon, ChevronDown, ChevronRight, Star, Layers, BarChart3, Search, Grid, Linkedin, Instagram, Twitter } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
+import { instructors } from '@/data/instructors';
 
-const courses = [
+import { courses as allCourses, categories } from '@/data/courses';
+
+const megaCourses = [
   {
-    group: "Kurslar",
-    items: [
-      { name: "Çelik Yapı Tasarımı", category: "Yapısal Tasarım", isNew: true },
-      { name: "Betonarme Tasarımı", category: "Yapısal Tasarım" },
-      { name: "Ahşap Yapı Tasarımı", category: "Yapısal Tasarım" },
-    ]
+    group: "Çelik ve Ahşap Yapılar",
+    items: allCourses.filter(c => c.category.includes("Çelik") || c.category.includes("Ahşap"))
+  },
+  {
+    group: "Betonarme ve Performans",
+    items: allCourses.filter(c => c.category.includes("Betonarme") || c.category.includes("Performans") || c.category.includes("BIM"))
   }
-];
-
-const categories = [
-  "Yapısal Tasarım",
-  "Deprem Mühendisliği",
-  "Performansa Dayalı Tasarım",
-  "Güçlendirme Projeleri",
-  "BIM Modelleme",
-];
-
-const instructorList = [
-  "Doç. Dr. Onur Şeker",
-  "Dr. Öğr. Üyesi Ülgen Mert",
-  "Ömer Asım Şişman",
-  "Çağatay Demirci",
-  "Doç. Dr. Sevilay Demirkesen Çakır",
 ];
 
 export default function Navbar() {
@@ -62,8 +49,8 @@ export default function Navbar() {
 
   const menuItems = [
     { name: 'Kurslar', hasMegaMenu: true, href: '/kurslar' },
-    { name: 'Kategoriler', hasMegaMenu: true, href: '#' },
-    { name: 'Eğitmenler', hasMegaMenu: true, href: '/#instructors' },
+    { name: 'Kategoriler', hasMegaMenu: true, href: '/kategoriler' },
+    { name: 'Eğitmenler', hasMegaMenu: true, href: '/egitmenler' },
     { name: 'Hakkımızda', hasMegaMenu: false, href: '/hakkimizda' },
     { name: 'İletişim', hasMegaMenu: false, href: '/iletisim' },
   ];
@@ -108,22 +95,22 @@ export default function Navbar() {
                         
                         {item.name === 'Kurslar' && (
                           <div className="mega-courses-content">
-                            {courses.map((group) => (
+                            {megaCourses.map((group) => (
                               <div key={group.group} className="mega-course-group">
                                 <h4 className="mega-course-group-title">{group.group}</h4>
                                 <ul className="mega-course-list">
                                   {group.items.map((course) => (
-                                    <li key={course.name} className="mega-course-item">
+                                    <li key={course.slug} className="mega-course-item">
                                       <div className="mega-course-icon">
                                         <BarChart3 size={16} />
                                       </div>
                                       <div className="mega-course-info">
-                                        <div className="mega-course-name-row">
-                                          <strong>{course.name}</strong>
+                                        <Link href={`/kurslar/${course.slug}`} className="mega-course-name-row" style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setMobileExpanded(null)}>
+                                          <strong>{course.shortTitle}</strong>
                                           {course.isNew && <span className="mega-course-badge">Yeni</span>}
-                                        </div>
+                                        </Link>
                                         <div className="mega-course-meta">
-                                          <span><Layers size={11} /> {course.category}</span>
+                                          <span><Layers size={11} /> {course.level}</span>
                                         </div>
                                       </div>
                                     </li>
@@ -137,15 +124,26 @@ export default function Navbar() {
                         {item.name === 'Kategoriler' && (
                           <ul className="mega-simple-list">
                             {categories.map((cat) => (
-                              <li key={cat}>{cat}</li>
+                              <li key={cat}>
+                                <Link 
+                                  href={`/kurslar?category=${encodeURIComponent(cat)}`} 
+                                  className="mega-simple-link"
+                                >
+                                  {cat}
+                                </Link>
+                              </li>
                             ))}
                           </ul>
                         )}
 
                         {item.name === 'Eğitmenler' && (
                           <ul className="mega-simple-list">
-                            {instructorList.map((name) => (
-                              <li key={name}>{name}</li>
+                            {instructors.map((ins) => (
+                              <li key={ins.slug}>
+                                <Link href={`/egitmenler/${ins.slug}`} className="mega-simple-link">
+                                  {ins.name}
+                                </Link>
+                              </li>
                             ))}
                           </ul>
                         )}
@@ -261,17 +259,17 @@ export default function Navbar() {
                   </button>
                   {mobileExpanded === item.name && (
                     <div className="mob-submenu">
-                      {item.name === 'Kurslar' && courses.map((group) => (
+                      {item.name === 'Kurslar' && megaCourses.map((group) => (
                         <div key={group.group} className="mob-submenu-group">
                           <span className="mob-submenu-title">{group.group}</span>
                           {group.items.map((course) => (
                             <Link 
-                              key={course.name} 
-                              href="#" 
+                              key={course.slug} 
+                              href={`/kurslar/${course.slug}`} 
                               className="mob-submenu-link"
                               onClick={() => setMobileOpen(false)}
                             >
-                              <span>{course.name}</span>
+                              <span>{course.shortTitle}</span>
                               {course.isNew && <span className="mob-badge">Yeni</span>}
                             </Link>
                           ))}
@@ -280,21 +278,21 @@ export default function Navbar() {
                       {item.name === 'Kategoriler' && categories.map((cat) => (
                         <Link 
                           key={cat} 
-                          href="#" 
+                          href={`/kurslar?category=${encodeURIComponent(cat)}`} 
                           className="mob-submenu-link"
                           onClick={() => setMobileOpen(false)}
                         >
                           {cat}
                         </Link>
                       ))}
-                      {item.name === 'Eğitmenler' && instructorList.map((name) => (
+                      {item.name === 'Eğitmenler' && instructors.map((ins) => (
                         <Link 
-                          key={name} 
-                          href="#" 
+                          key={ins.slug} 
+                          href={`/egitmenler/${ins.slug}`} 
                           className="mob-submenu-link"
                           onClick={() => setMobileOpen(false)}
                         >
-                          {name}
+                          {ins.name}
                         </Link>
                       ))}
                     </div>

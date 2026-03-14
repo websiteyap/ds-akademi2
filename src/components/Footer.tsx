@@ -94,13 +94,13 @@ export default function Footer() {
             Eğitim Programları
           </h4>
           <ul className="footer-links">
-            <li><Link href="#"><ChevronRight size={14}/> Temel Çelik Yapı Tasarımı</Link></li>
-            <li><Link href="#"><ChevronRight size={14}/> Temel Betonarme Yapı Tasarımı</Link></li>
-            <li><Link href="#"><ChevronRight size={14}/> Depreme Dayanıklı Çelik Tasarım</Link></li>
-            <li><Link href="#"><ChevronRight size={14}/> Depreme Dayanıklı Betonarme Tasarım</Link></li>
-            <li><Link href="#"><ChevronRight size={14}/> Performansa Dayalı Yapı Analizi</Link></li>
-            <li><Link href="#"><ChevronRight size={14}/> Yapısal Ahşap Tasarım</Link></li>
-            <li><Link href="#"><ChevronRight size={14}/> Bina Bilgi Modelleme (BIM)</Link></li>
+            <li><Link href="/kurslar/temel-celik-yapi-tasarimi"><ChevronRight size={14}/> Temel Çelik Yapı Tasarımı</Link></li>
+            <li><Link href="/kurslar/temel-betonarme-yapi-tasarimi"><ChevronRight size={14}/> Temel Betonarme Yapı Tasarımı</Link></li>
+            <li><Link href="/kurslar/depreme-dayanikli-celik-yapi-tasarimi"><ChevronRight size={14}/> Depreme Dayanıklı Çelik Tasarım</Link></li>
+            <li><Link href="/kurslar/depreme-dayanikli-betonarme-tasarim"><ChevronRight size={14}/> Depreme Dayanıklı Betonarme Tasarım</Link></li>
+            <li><Link href="/kurslar/performansa-dayali-yapi-analizi"><ChevronRight size={14}/> Performansa Dayalı Yapı Analizi</Link></li>
+            <li><Link href="/kurslar/yapisal-ahsap-tasarimi"><ChevronRight size={14}/> Yapısal Ahşap Tasarım</Link></li>
+            <li><Link href="/kurslar/bina-bilgi-modelleme-bim"><ChevronRight size={14}/> Bina Bilgi Modelleme (BIM)</Link></li>
           </ul>
         </nav>
 
@@ -112,11 +112,10 @@ export default function Footer() {
           </h4>
           <ul className="footer-links">
             <li><Link href="/hakkimizda"><ChevronRight size={14}/> Hakkımızda</Link></li>
-            <li><Link href="/#instructors"><ChevronRight size={14}/> Eğitmenlerimiz</Link></li>
-            <li><Link href="/#faq"><ChevronRight size={14}/> Sıkça Sorulan Sorular</Link></li>
+            <li><Link href="/egitmenler"><ChevronRight size={14}/> Eğitmenlerimiz</Link></li>
+            <li><Link href="/sss"><ChevronRight size={14}/> Sıkça Sorulan Sorular</Link></li>
             <li><Link href="/iletisim"><ChevronRight size={14}/> İletişim</Link></li>
-            <li><Link href="#"><ChevronRight size={14}/> Kariyer</Link></li>
-            <li><Link href="#"><ChevronRight size={14}/> Blog</Link></li>
+            <li><Link href="/blog"><ChevronRight size={14}/> Blog</Link></li>
           </ul>
         </nav>
 

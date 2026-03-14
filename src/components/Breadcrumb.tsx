@@ -12,13 +12,13 @@ export default function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
       <div className="container">
         <ol className="breadcrumb-list">
           <li className="breadcrumb-item">
-            <Link href="/" className="breadcrumb-link" aria-label="Ana Sayfa">
-              <Home size={14} />
+            <Link href="/" className="breadcrumb-link">
+              Ana Sayfa
             </Link>
           </li>
           {items.map((item, i) => (
             <li key={i} className="breadcrumb-item">
-              <ChevronRight size={14} className="breadcrumb-separator" />
+              <ChevronRight size={12} className="breadcrumb-separator" />
               {item.href ? (
                 <Link href={item.href} className="breadcrumb-link">
                   {item.label}

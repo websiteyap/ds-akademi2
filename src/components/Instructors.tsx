@@ -2,6 +2,7 @@
 
 import React, { useRef } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 
 const instructors = [
@@ -12,6 +13,7 @@ const instructors = [
     title: "Doçent Doktor",
     specialty: "Çelik Yapı Tasarımı & Performans Analizi",
     courseCount: 3,
+    slug: "onur-seker"
   },
   {
     id: 2,
@@ -20,6 +22,7 @@ const instructors = [
     title: "Dr. Öğretim Üyesi",
     specialty: "Betonarme Yapı & Performans Analizi",
     courseCount: 3,
+    slug: "ulgen-mert"
   },
   {
     id: 3,
@@ -28,6 +31,7 @@ const instructors = [
     title: "Mühendis & Eğitmen",
     specialty: "Yapısal Ahşap Tasarım",
     courseCount: 1,
+    slug: "omer-asim-sisman"
   },
   {
     id: 4,
@@ -36,6 +40,7 @@ const instructors = [
     title: "Mühendis & Eğitmen",
     specialty: "Yapısal Ahşap Tasarım",
     courseCount: 1,
+    slug: "cagatay-demirci"
   },
   {
     id: 5,
@@ -44,6 +49,7 @@ const instructors = [
     title: "Doçent Doktor",
     specialty: "Bina Bilgi Modelleme (BIM)",
     courseCount: 1,
+    slug: "sevilay-demirkesen-cakir"
   },
 ];
 
@@ -79,7 +85,7 @@ export default function Instructors() {
 
         <div className="ins-track" ref={scrollRef}>
           {instructors.map((ins) => (
-            <div key={ins.id} className="ins-card">
+            <Link href={`/egitmenler/${ins.slug}`} key={ins.id} className="ins-card" style={{ textDecoration: 'none' }}>
               <div className="ins-img-area">
                 <Image
                   src={ins.image}
@@ -100,7 +106,7 @@ export default function Instructors() {
                   <span>{ins.courseCount} Kurs</span>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

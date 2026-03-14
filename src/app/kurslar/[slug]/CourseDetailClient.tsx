@@ -19,12 +19,19 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { type Course, courses } from "@/data/courses";
+import { instructors } from "@/data/instructors";
 
 interface Props {
   course: Course;
 }
 
 export default function CourseDetailClient({ course }: Props) {
+  // Try to find the instructor in our dataset for the profile link
+  const instructorData = instructors.find(i => 
+    course.instructor.includes(i.name) || i.name.includes(course.instructor)
+  );
+  const instructorHref = instructorData ? `/egitmenler/${instructorData.slug}` : "#";
+
   // Related courses (same category, excluding current)
   const relatedCourses = courses
     .filter((c) => c.category === course.category && c.id !== course.id)
@@ -194,7 +201,7 @@ export default function CourseDetailClient({ course }: Props) {
               {/* Instructor Card */}
               <div className="course-detail-sidebar-card">
                 <h3 className="course-detail-sidebar-title">Eğitmen</h3>
-                <div className="course-detail-instructor">
+                <Link href={instructorHref} className="course-detail-instructor" style={{ textDecoration: 'none' }}>
                   <div className="course-detail-instructor-img-wrap">
                     <Image
                       src={course.instructorImage}
@@ -208,7 +215,7 @@ export default function CourseDetailClient({ course }: Props) {
                     <strong>{course.instructor}</strong>
                     <span>{course.instructorTitle}</span>
                   </div>
-                </div>
+                </Link>
               </div>
 
               {/* Course Info Card */}

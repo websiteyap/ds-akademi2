@@ -1,16 +1,63 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GraduationCap, ArrowRight } from 'lucide-react';
 import { courses } from '@/data/courses';
+
+const AUTO_PLAY_INTERVAL = 5000;
 
 export default function HeroSlider() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [progress, setProgress] = useState(0);
 
-  const nextSlide = () => setCurrentIndex(prev => (prev === courses.length - 1 ? 0 : prev + 1));
-  const prevSlide = () => setCurrentIndex(prev => (prev === 0 ? courses.length - 1 : prev - 1));
+  const nextSlide = useCallback(() => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setCurrentIndex(prev => (prev === courses.length - 1 ? 0 : prev + 1));
+    setProgress(0);
+    setTimeout(() => setIsTransitioning(false), 650);
+  }, [isTransitioning]);
+
+  const prevSlide = useCallback(() => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setCurrentIndex(prev => (prev === 0 ? courses.length - 1 : prev - 1));
+    setProgress(0);
+    setTimeout(() => setIsTransitioning(false), 650);
+  }, [isTransitioning]);
+
+  const goToSlide = useCallback((index: number) => {
+    if (isTransitioning || index === currentIndex) return;
+    setIsTransitioning(true);
+    setCurrentIndex(index);
+    setProgress(0);
+    setTimeout(() => setIsTransitioning(false), 650);
+  }, [isTransitioning, currentIndex]);
+
+  // Auto-play
+  useEffect(() => {
+    if (!isAutoPlaying) return;
+    const interval = setInterval(() => {
+      nextSlide();
+    }, AUTO_PLAY_INTERVAL);
+    return () => clearInterval(interval);
+  }, [isAutoPlaying, nextSlide]);
+
+  // Progress bar
+  useEffect(() => {
+    if (!isAutoPlaying) return;
+    const tick = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) return 0;
+        return prev + (100 / (AUTO_PLAY_INTERVAL / 50));
+      });
+    }, 50);
+    return () => clearInterval(tick);
+  }, [isAutoPlaying, currentIndex]);
 
   const getSlideClass = (index: number) => {
     let diff = index - currentIndex;
@@ -30,48 +77,100 @@ export default function HeroSlider() {
   };
 
   return (
-    <div className="hero-slider-container">
-      <button className="arrow prev-arrow" onClick={prevSlide} aria-label="Previous">
-        <ChevronLeft size={64} strokeWidth={1.5} />
-      </button>
+    <section 
+      className="hero-slider-section"
+      onMouseEnter={() => setIsAutoPlaying(false)}
+      onMouseLeave={() => setIsAutoPlaying(true)}
+    >
+      {/* Section Header */}
+      <div className="container">
+        <div className="hero-slider-top">
+          <div className="hero-slider-top-left">
+            <span className="hero-slider-badge">
+              <GraduationCap size={14} />
+              KURSLARIMIZ
+            </span>
+            <h2 className="hero-slider-heading">Öne Çıkan <span className="text-gradient">Eğitimler</span></h2>
+          </div>
+          <Link href="/kurslar" className="hero-slider-view-all">
+            Tüm Kurslar
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+      </div>
 
-      {courses.map((course, index) => {
-        const slideClass = getSlideClass(index);
-        return (
-          <div 
-            key={course.id} 
-            className={slideClass}
-            onClick={() => {
-              if (slideClass.includes('prev')) prevSlide();
-              if (slideClass.includes('next')) nextSlide();
-            }}
-          >
-            <Image 
-              src={course.image} 
-              alt={course.title} 
-              fill 
-              className="slide-image"
-              sizes="(max-width: 768px) 100vw, 45vw"
-              priority={index === currentIndex || slideClass.includes('prev') || slideClass.includes('next')}
-            />
-            <div className="slide-content">
-              <div className="slide-meta-bottom">
-                {slideClass === 'slide active' ? (
-                  <Link href={`/kurslar/${course.slug}`} className="slide-btn" style={{ textDecoration: 'none' }}>
-                    KURSA KATIL
-                  </Link>
-                ) : (
-                  <button className="slide-btn">KURSA KATIL</button>
-                )}
+      {/* Full-width Carousel */}
+      <div className="hero-slider-container">
+        <button className="arrow prev-arrow" onClick={prevSlide} aria-label="Önceki">
+          <ChevronLeft size={64} strokeWidth={1.5} />
+        </button>
+
+        {courses.map((course, index) => {
+          const slideClass = getSlideClass(index);
+          return (
+            <div 
+              key={course.id} 
+              className={slideClass}
+              onClick={() => {
+                if (slideClass.includes('prev')) prevSlide();
+                if (slideClass.includes('next')) nextSlide();
+              }}
+            >
+              <Image 
+                src={course.image} 
+                alt={course.title} 
+                fill 
+                className="slide-image"
+                sizes="(max-width: 768px) 100vw, 45vw"
+                priority={index === currentIndex || slideClass.includes('prev') || slideClass.includes('next')}
+              />
+              <div className="slide-content">
+                <div className="slide-meta-bottom">
+                  {slideClass === 'slide active' ? (
+                    <Link href={`/kurslar/${course.slug}`} className="slide-btn" style={{ textDecoration: 'none' }}>
+                      KURSA KATIL
+                    </Link>
+                  ) : (
+                    <button className="slide-btn">KURSA KATIL</button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
 
-      <button className="arrow next-arrow" onClick={nextSlide} aria-label="Next">
-        <ChevronRight size={64} strokeWidth={1.5} />
-      </button>
-    </div>
+        <button className="arrow next-arrow" onClick={nextSlide} aria-label="Sonraki">
+          <ChevronRight size={64} strokeWidth={1.5} />
+        </button>
+      </div>
+
+      {/* Bottom controls */}
+      <div className="container">
+        <div className="hero-slider-controls">
+          <div className="hero-slider-dots">
+            {courses.map((_, index) => (
+              <button
+                key={index}
+                className={`hero-slider-dot ${index === currentIndex ? 'hero-slider-dot--active' : ''}`}
+                onClick={() => goToSlide(index)}
+                aria-label={`Slayt ${index + 1}`}
+              >
+                {index === currentIndex && (
+                  <span 
+                    className="hero-slider-dot-progress" 
+                    style={{ width: `${isAutoPlaying ? progress : 100}%` }}
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+          <span className="hero-slider-counter">
+            <strong>{String(currentIndex + 1).padStart(2, '0')}</strong>
+            <span className="hero-slider-counter-sep">/</span>
+            {String(courses.length).padStart(2, '0')}
+          </span>
+        </div>
+      </div>
+    </section>
   );
 }
