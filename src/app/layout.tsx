@@ -7,6 +7,8 @@ import FilterBar from "@/components/FilterBar";
 import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
 import GlobalLoading from "@/components/GlobalLoading";
+import AuthSessionProvider from "@/components/AuthSessionProvider";
+import Toaster from "@/components/Toaster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,16 +54,19 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
-        <GlobalLoading />
-        <ThemeProvider>
-          <Navbar />
-          <FilterBar />
-          <main id="main-content">
-            {children}
-          </main>
-          <Footer />
-          <ScrollToTop />
-        </ThemeProvider>
+        <AuthSessionProvider>
+          <GlobalLoading />
+          <ThemeProvider>
+            <Navbar />
+            <FilterBar />
+            <main id="main-content">
+              {children}
+            </main>
+            <Footer />
+            <ScrollToTop />
+          </ThemeProvider>
+          <Toaster />
+        </AuthSessionProvider>
       </body>
     </html>
   );

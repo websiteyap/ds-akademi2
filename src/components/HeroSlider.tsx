@@ -84,15 +84,15 @@ export default function HeroSlider() {
     >
       {/* Section Header */}
       <div className="container">
-        <div className="hero-slider-top">
-          <div className="hero-slider-top-left">
-            <span className="hero-slider-badge">
+        <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
+          <div className="flex flex-col gap-1">
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold tracking-[3px] uppercase text-[var(--accent-color)]">
               <GraduationCap size={14} />
               KURSLARIMIZ
             </span>
             <h2 className="hero-slider-heading">Öne Çıkan <span className="text-gradient">Eğitimler</span></h2>
           </div>
-          <Link href="/kurslar" className="hero-slider-view-all">
+          <Link href="/kurslar" className="hero-slider-view-all shrink-0">
             Tüm Kurslar
             <ArrowRight size={16} />
           </Link>

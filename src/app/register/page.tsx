@@ -3,19 +3,79 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
+import { showToast } from '@/components/Toaster';
+import { Mail, Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [agreed, setAgreed] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     document.body.setAttribute('data-page', 'auth');
     return () => { document.body.removeAttribute('data-page'); };
   }, []);
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (password.length < 8) {
+      showToast.error('Şifre en az 8 karakter olmalıdır.');
+      return;
+    }
+    if (!agreed) {
+      showToast.warning('Devam etmek için kullanıcı sözleşmesini kabul etmelisiniz.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Step 1: Create the user account
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast.error(data.error || 'Kayıt sırasında bir hata oluştu.');
+        setIsLoading(false);
+        return;
+      }
+
+      showToast.success('Hesabınız oluşturuldu! Yönlendiriliyorsunuz...');
+
+      // Step 2: Auto sign-in after registration
+      const signInResult = await signIn('credentials', {
+        email: email.toLowerCase().trim(),
+        password,
+        redirect: false,
+      });
+
+      if (signInResult?.error) {
+        // Account created but sign-in failed — redirect to login
+        router.push('/login');
+      } else {
+        router.push('/dashboard');
+        router.refresh();
+      }
+    } catch {
+      showToast.error('Bağlantı hatası oluştu. Lütfen tekrar deneyin.');
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="auth-page-container">
-      {/* Background glow effects matching the hero section */}
       <div className="hero-bg-elements">
         <div className="hero-glow hero-glow-1"></div>
         <div className="hero-glow hero-glow-2"></div>
@@ -23,27 +83,31 @@ export default function RegisterPage() {
       </div>
 
       <div className="auth-card">
-        {/* Logo inside card */}
         <Link href="/" className="auth-logo">
           <Image src="/logo.png" alt="DS Akademi Logo" width={96} height={96} className="auth-logo-img" />
         </Link>
 
         <div className="auth-header">
           <h1 className="auth-title">Hesap Oluştur</h1>
-          <p className="auth-subtitle">DS Akademi'ye katılarak kariyerinize yön verin</p>
+          <p className="auth-subtitle">DS Akademi&apos;ye katılarak kariyerinize yön verin</p>
         </div>
 
-        <form className="auth-form" onSubmit={(e) => e.preventDefault()}>
+
+        <form className="auth-form" onSubmit={handleSubmit}>
           <div className="auth-input-group">
             <label className="auth-label" htmlFor="name">Ad Soyad</label>
             <div className="auth-input-wrapper">
               <User className="auth-input-icon" size={18} />
-              <input 
-                type="text" 
-                id="name" 
-                className="auth-input" 
-                placeholder="Örn: Ahmet Yılmaz" 
-                required 
+              <input
+                type="text"
+                id="name"
+                className="auth-input"
+                placeholder="Örn: Ahmet Yılmaz"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoComplete="name"
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -52,12 +116,16 @@ export default function RegisterPage() {
             <label className="auth-label" htmlFor="email">E-posta Adresi</label>
             <div className="auth-input-wrapper">
               <Mail className="auth-input-icon" size={18} />
-              <input 
-                type="email" 
-                id="email" 
-                className="auth-input" 
-                placeholder="ornek@email.com" 
-                required 
+              <input
+                type="email"
+                id="email"
+                className="auth-input"
+                placeholder="ornek@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -66,18 +134,23 @@ export default function RegisterPage() {
             <label className="auth-label" htmlFor="password">Şifre</label>
             <div className="auth-input-wrapper">
               <Lock className="auth-input-icon" size={18} />
-              <input 
-                type={showPassword ? "text" : "password"} 
-                id="password" 
-                className="auth-input" 
-                placeholder="En az 8 karakter" 
-                required 
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                className="auth-input"
+                placeholder="En az 8 karakter"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                autoComplete="new-password"
+                disabled={isLoading}
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="password-toggle"
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Şifreyi Gizle" : "Şifreyi Göster"}
+                aria-label={showPassword ? 'Şifreyi Gizle' : 'Şifreyi Göster'}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -86,23 +159,33 @@ export default function RegisterPage() {
 
           <div className="auth-options">
             <label className="checkbox-group">
-              <input type="checkbox" required />
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                disabled={isLoading}
+              />
               <span className="checkbox-label" style={{ fontSize: '0.8rem' }}>
-                <Link href="#" className="forgot-link">Kullanıcı Sözleşmesi</Link>'ni okudum ve kabul ediyorum.
+                <Link href="/kullanim-kosullari" className="forgot-link" target="_blank">
+                  Kullanıcı Sözleşmesi
+                </Link>
+                &apos;ni okudum ve kabul ediyorum.
               </span>
             </label>
           </div>
 
-          <button type="submit" className="auth-submit-btn">
-            Kayıt Ol
+          <button type="submit" className="auth-submit-btn" disabled={isLoading}>
+            {isLoading ? (
+              <><Loader2 size={18} className="auth-spinner" /> Hesap oluşturuluyor...</>
+            ) : (
+              'Kayıt Ol'
+            )}
           </button>
         </form>
 
-        <div className="auth-divider">
-          <span>VEYA</span>
-        </div>
+        <div className="auth-divider"><span>VEYA</span></div>
 
-        <button type="button" className="social-login-btn">
+        <button type="button" className="social-login-btn" disabled>
           <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -113,7 +196,7 @@ export default function RegisterPage() {
         </button>
 
         <div className="auth-footer">
-          Zaten hesabınız var mı? 
+          Zaten hesabınız var mı?{' '}
           <Link href="/login" className="auth-footer-link">Giriş Yap</Link>
         </div>
       </div>

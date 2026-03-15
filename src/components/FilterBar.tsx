@@ -12,7 +12,7 @@ export default function FilterBar() {
   const [category, setCategory] = useState("");
   const [level, setLevel] = useState("");
 
-  if (pathname === '/login' || pathname === '/register') {
+  if (pathname === '/login' || pathname === '/register' || pathname.startsWith('/dashboard')) {
     return null;
   }
 

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Clock, ArrowRight, Tag, BookOpen } from 'lucide-react';
 
 const articles = [
@@ -12,116 +13,87 @@ const articles = [
     category: "Yönetmelik",
     readTime: "8 dk",
     date: "28 Şubat 2026",
-    featured: true,
     image: "/DS-201-DEPREME-DAYANIKLI-ÇELİK-YAPI-TASARIMI-EĞİTİMİ.jpg",
+    slug: "tbdy-2018-guncellemeleri",
   },
   {
     id: 2,
     title: "Çelik Yapılarda Performans Bazlı Tasarım Yaklaşımları",
-    excerpt: "Modern çelik yapı tasarımında performans hedeflerinin belirlenmesi ve analiz yöntemleri.",
+    excerpt: "Modern çelik yapı tasarımında performans hedeflerinin belirlenmesi ve analiz yöntemleri hakkında kapsamlı bir inceleme.",
     category: "Çelik Yapı",
     readTime: "6 dk",
     date: "22 Şubat 2026",
-    featured: false,
     image: "/DS-301-PERFORMANSA-DAYALI-ÇELİK-YAPI-TASARIMI-EĞİTİMİ.jpg",
+    slug: "celik-yapilarda-performans-bazli-tasarim",
   },
   {
     id: 3,
     title: "BIM Teknolojisinin Yapı Sektöründeki Geleceği",
-    excerpt: "Yapı Bilgi Modellemesi'nin sürdürülebilir inşaat ve proje yönetimine katkıları.",
+    excerpt: "Yapı Bilgi Modellemesi'nin sürdürülebilir inşaat ve proje yönetimine katkıları ve sektördeki dönüşümü.",
     category: "BIM & Teknoloji",
     readTime: "5 dk",
     date: "15 Şubat 2026",
-    featured: false,
     image: "/DS-501-BİNA-BİLGİ-MODELLEME-(BIM)-TEORİK-VE-UYGULAMA-EĞİTİMİ.jpg",
-  },
-  {
-    id: 4,
-    title: "Mevcut Betonarme Yapıların Değerlendirilmesinde Güncel Yöntemler",
-    excerpt: "Deprem performansı değerlendirmesi için kullanılan modern analiz teknikleri.",
-    category: "Betonarme",
-    readTime: "7 dk",
-    date: "8 Şubat 2026",
-    featured: false,
-    image: "/DS-302-MEVCUT-BETONARME-YAPILARIN-DEĞERLENDİRİLMESİ-VE-PERFORMANS-ANALİZİ-EĞİTİMİ.jpg",
+    slug: "bim-teknolojisinin-gelecegi",
   },
 ];
 
 export default function BlogSection() {
-  const featured = articles.find((a) => a.featured)!;
-  const rest = articles.filter((a) => !a.featured);
-
   return (
     <section className="blog-section">
       <div className="container">
+
         {/* Header */}
-        <div className="blog-top-row">
-          <div className="blog-left">
-            <span className="blog-badge">
+        <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
+          <div className="flex flex-col gap-1">
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold tracking-[3px] uppercase text-[var(--accent-color)]">
               <BookOpen size={14} />
               TEKNİK KÜTÜPHANE
             </span>
-            <h2 className="blog-heading">Makale & Kaynaklar</h2>
+            <h2 className="blog-heading">Makale &amp; Kaynaklar</h2>
           </div>
-          <button className="blog-view-all">
+          <Link href="/blog" className="hero-slider-view-all shrink-0">
             Tümünü Gör <ArrowRight size={16} />
-          </button>
+          </Link>
         </div>
 
-        {/* Content Grid */}
-        <div className="blog-grid">
-          {/* Featured Article */}
-          <article className="blog-featured">
-            <div className="blog-featured-img">
-              <Image
-                src={featured.image}
-                alt={featured.title}
-                fill
-                className="blog-img"
-                sizes="(max-width: 768px) 100vw, 55vw"
-              />
-              <div className="blog-featured-overlay" />
-              <span className="blog-cat-badge">{featured.category}</span>
-            </div>
-            <div className="blog-featured-content">
-              <h3 className="blog-featured-title">{featured.title}</h3>
-              <p className="blog-featured-excerpt">{featured.excerpt}</p>
-              <div className="blog-meta">
-                <span className="blog-date">{featured.date}</span>
-                <span className="blog-dot">·</span>
-                <span className="blog-read"><Clock size={13} /> {featured.readTime}</span>
+        {/* 3-Column Card Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {articles.map((article) => (
+            <Link
+              key={article.id}
+              href={`/blog/${article.slug}`}
+              className="blog-card-new group"
+              style={{ textDecoration: 'none' }}
+            >
+              {/* Image */}
+              <div className="blog-card-new-img">
+                <Image
+                  src={article.image}
+                  alt={article.title}
+                  fill
+                  className="blog-img"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                />
               </div>
-            </div>
-          </article>
 
-          {/* Side Articles */}
-          <div className="blog-side">
-            {rest.map((article) => (
-              <article key={article.id} className="blog-card">
-                <div className="blog-card-img">
-                  <Image
-                    src={article.image}
-                    alt={article.title}
-                    fill
-                    className="blog-img"
-                    sizes="160px"
-                  />
+              {/* Content */}
+              <div className="blog-card-new-body">
+                <span className="blog-card-cat">
+                  <Tag size={11} /> {article.category}
+                </span>
+                <h3 className="blog-card-new-title">{article.title}</h3>
+                <p className="blog-card-excerpt">{article.excerpt}</p>
+                <div className="blog-meta">
+                  <span className="blog-date">{article.date}</span>
+                  <span className="blog-dot">·</span>
+                  <span className="blog-read"><Clock size={12} /> {article.readTime}</span>
                 </div>
-                <div className="blog-card-content">
-                  <span className="blog-card-cat">
-                    <Tag size={11} /> {article.category}
-                  </span>
-                  <h4 className="blog-card-title">{article.title}</h4>
-                  <div className="blog-meta">
-                    <span className="blog-date">{article.date}</span>
-                    <span className="blog-dot">·</span>
-                    <span className="blog-read"><Clock size={12} /> {article.readTime}</span>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
+              </div>
+            </Link>
+          ))}
         </div>
+
       </div>
     </section>
   );

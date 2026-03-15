@@ -42,8 +42,8 @@ export default function Navbar() {
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
 
-  // Hide navbar on auth pages
-  if (pathname === '/login' || pathname === '/register') {
+  // Hide navbar on auth pages and dashboard
+  if (pathname === '/login' || pathname === '/register' || pathname.startsWith('/dashboard')) {
     return null;
   }
 

@@ -12,7 +12,7 @@ export default function Footer() {
   const [subscribed, setSubscribed] = useState(false);
 
   const hideFooterRoutes = ['/login', '/register'];
-  if (hideFooterRoutes.includes(pathname)) {
+  if (hideFooterRoutes.includes(pathname) || pathname.startsWith('/dashboard')) {
     return null;
   }
 
@@ -171,10 +171,10 @@ export default function Footer() {
         <div className="container footer-bottom-inner">
           <p>&copy; {new Date().getFullYear()} DS Akademi. Tüm hakları saklıdır.</p>
           <nav className="footer-legal-links" aria-label="Yasal Bağlantılar">
-            <Link href="#">Kullanım Koşulları</Link>
-            <Link href="#">Gizlilik Politikası</Link>
-            <Link href="#">KVKK Aydınlatma Metni</Link>
-            <Link href="#">Çerez Politikası</Link>
+            <Link href="/kullanim-kosullari">Kullanım Koşulları</Link>
+            <Link href="/gizlilik-politikasi">Gizlilik Politikası</Link>
+            <Link href="/kvkk">KVKK Aydınlatma Metni</Link>
+            <Link href="/cerez-politikasi">Çerez Politikası</Link>
           </nav>
         </div>
       </div>
