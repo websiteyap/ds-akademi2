@@ -335,7 +335,6 @@ export default function CourseDetailClient({ course, relatedCourses }: Props) {
 
               {/* CTA Card */}
               <div className="course-detail-sidebar-card course-detail-sidebar-cta">
-                <GraduationCap size={28} />
                 <h3>Hemen Başlayın</h3>
                 <p>Kayıt olarak sertifikalı eğitim programına katılın.</p>
                 <button className="primary-btn" style={{ width: "100%" }}>

@@ -21,11 +21,11 @@ export default function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
               <ChevronRight size={12} className="breadcrumb-separator" />
               {item.href ? (
                 <Link href={item.href} className="breadcrumb-link">
-                  {item.label}
+                  <span className="breadcrumb-label">{item.label}</span>
                 </Link>
               ) : (
                 <span className="breadcrumb-current" aria-current="page">
-                  {item.label}
+                  <span className="breadcrumb-label">{item.label}</span>
                 </span>
               )}
             </li>

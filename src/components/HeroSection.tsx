@@ -4,6 +4,7 @@ import React from 'react';
 import { Play, ArrowRight, Star, BadgeCheck, GraduationCap } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import HeroTrustSlider from './HeroTrustSlider';
 
 const col1 = [
   { id: 1, name: "Doç. Dr. Onur Şeker", course: "Çelik Yapı Tasarımı", img: "/instructor-onur.png", slug: "onur-seker" },
@@ -57,21 +58,7 @@ export default function HeroSection() {
             </Link>
           </div>
           
-          <div className="hero-trust">
-            <div className="hero-avatars" style={{ background: 'rgba(0,0,0,0.05)', padding: '0.5rem', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-               <BadgeCheck size={24} color="var(--accent-color, #3b82f6)" />
-            </div>
-            <div className="hero-trust-text">
-              <div className="stars">
-                <Star size={14} fill="#FFB800" color="#FFB800" />
-                <Star size={14} fill="#FFB800" color="#FFB800" />
-                <Star size={14} fill="#FFB800" color="#FFB800" />
-                <Star size={14} fill="#FFB800" color="#FFB800" />
-                <Star size={14} fill="#FFB800" color="#FFB800" />
-              </div>
-              <span><strong>Akademik Düzeyde</strong> Eğitim İçerikleri</span>
-            </div>
-          </div>
+          <HeroTrustSlider />
         </div>
 
         {/* RIGHT COLUMN: ASYMMETRIC SCROLLING CARDS */}

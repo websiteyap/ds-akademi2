@@ -271,7 +271,6 @@ export default function Navbar({ categories, courses, instructors }: NavbarProps
                     <div className="mob-submenu">
                       {item.name === 'Kurslar' && megaCourses.map((group) => (
                         <div key={group.group} className="mob-submenu-group">
-                          <span className="mob-submenu-title">{group.group}</span>
                           {group.items.map((course) => (
                             <Link 
                               key={course.slug} 

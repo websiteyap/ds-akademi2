@@ -17,13 +17,13 @@ export default function BlogDetailClient({ blog }: Props) {
 
   return (
     <main className="blog-detail-page">
+      <Breadcrumb 
+        items={[
+          { label: 'Blog', href: '/blog' },
+          { label: blog.title, href: `/blog/${blog.slug}` }
+        ]} 
+      />
       <div className="container">
-        <Breadcrumb 
-          items={[
-            { label: 'Blog', href: '/blog' },
-            { label: blog.title, href: `/blog/${blog.slug}` }
-          ]} 
-        />
         
         <article className="blog-article">
           <header className="blog-article-header">
