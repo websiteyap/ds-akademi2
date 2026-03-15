@@ -1,5 +1,6 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
+import { supabaseAdmin } from '@/lib/supabase';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import InactivityGuard from '@/components/dashboard/InactivityGuard';
 
@@ -22,6 +23,22 @@ export default async function DashboardLayout({
     role?: string;
   };
 
+  // Fetch blog permission for instructors
+  let canWriteBlog = false;
+  if (user.role === 'instructor' && user.id) {
+    const { data } = await supabaseAdmin
+      .from('users')
+      .select('can_write_blog')
+      .eq('id', user.id)
+      .single();
+    canWriteBlog = data?.can_write_blog ?? false;
+  }
+
+  const panelLabel =
+    user.role === 'admin'      ? 'Yönetici Paneli' :
+    user.role === 'instructor' ? 'Eğitmen Paneli'  :
+    'Öğrenci Paneli';
+
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--bg-color)]">
       {/* Sidebar — handles its own desktop/mobile states */}
@@ -30,6 +47,7 @@ export default async function DashboardLayout({
         userEmail={user.email}
         userImage={user.image}
         userRole={user.role}
+        canWriteBlog={canWriteBlog}
       />
 
       {/* Main content area */}
@@ -44,7 +62,7 @@ export default async function DashboardLayout({
             <h1 className="text-sm font-bold text-[var(--text-primary)]">
               DS Akademi{' '}
               <span className="hidden sm:inline text-[var(--text-secondary)] font-normal">
-                / Öğrenci Paneli
+                / {panelLabel}
               </span>
             </h1>
           </div>

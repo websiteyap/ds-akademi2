@@ -1,26 +1,19 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { User, Menu, X, Sun, Moon, ChevronDown, ChevronRight, Star, Layers, BarChart3, Search, Grid, Linkedin, Instagram, Twitter } from 'lucide-react';
+import { User, Menu, X, Sun, Moon, ChevronDown, ChevronRight, Layers, BarChart3, Search, Grid, Linkedin, Instagram, Twitter } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
-import { instructors } from '@/data/instructors';
+import type { Category, Course, Instructor } from '@/lib/types';
 
-import { courses as allCourses, categories } from '@/data/courses';
+interface NavbarProps {
+  categories: Category[];
+  courses: Course[];
+  instructors: Instructor[];
+}
 
-const megaCourses = [
-  {
-    group: "Çelik ve Ahşap Yapılar",
-    items: allCourses.filter(c => c.category.includes("Çelik") || c.category.includes("Ahşap"))
-  },
-  {
-    group: "Betonarme ve Performans",
-    items: allCourses.filter(c => c.category.includes("Betonarme") || c.category.includes("Performans") || c.category.includes("BIM"))
-  }
-];
-
-export default function Navbar() {
+export default function Navbar({ categories, courses, instructors }: NavbarProps) {
   const [activeTab, setActiveTab] = useState('Kurslar');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
@@ -31,6 +24,24 @@ export default function Navbar() {
   const [mobSearch, setMobSearch] = useState("");
   const [mobCategory, setMobCategory] = useState("");
   const [mobLevel, setMobLevel] = useState("");
+
+  // Dynamic mega menu groups derived from DB courses
+  const megaCourses = useMemo(() => [
+    {
+      group: 'Çelik ve Ahşap Yapılar',
+      items: courses.filter(c => {
+        const cat = c.category?.name ?? '';
+        return cat.includes('Çelik') || cat.includes('Ahşap');
+      }),
+    },
+    {
+      group: 'Betonarme ve Performans',
+      items: courses.filter(c => {
+        const cat = c.category?.name ?? '';
+        return cat.includes('Betonarme') || cat.includes('Performans') || cat.includes('BIM');
+      }),
+    },
+  ], [courses]);
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
@@ -106,8 +117,8 @@ export default function Navbar() {
                                       </div>
                                       <div className="mega-course-info">
                                         <Link href={`/kurslar/${course.slug}`} className="mega-course-name-row" style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setMobileExpanded(null)}>
-                                          <strong>{course.shortTitle}</strong>
-                                          {course.isNew && <span className="mega-course-badge">Yeni</span>}
+                                          <strong>{course.short_title}</strong>
+                                          {course.is_new && <span className="mega-course-badge">Yeni</span>}
                                         </Link>
                                         <div className="mega-course-meta">
                                           <span><Layers size={11} /> {course.level}</span>
@@ -124,12 +135,12 @@ export default function Navbar() {
                         {item.name === 'Kategoriler' && (
                           <ul className="mega-simple-list">
                             {categories.map((cat) => (
-                              <li key={cat}>
+                              <li key={cat.slug}>
                                 <Link 
-                                  href={`/kurslar?category=${encodeURIComponent(cat)}`} 
+                                  href={`/kurslar?category=${encodeURIComponent(cat.name)}`} 
                                   className="mega-simple-link"
                                 >
-                                  {cat}
+                                  {cat.name}
                                 </Link>
                               </li>
                             ))}
@@ -219,10 +230,9 @@ export default function Navbar() {
               <Grid size={14} />
               <select value={mobCategory} onChange={(e) => setMobCategory(e.target.value)}>
                 <option value="" disabled>Kategori</option>
-                <option value="Çelik Yapı Tasarımı">Çelik Yapı</option>
-                <option value="Betonarme Yapı">Betonarme</option>
-                <option value="Ahşap Yapı">Ahşap Tasarım</option>
-                <option value="BIM">BIM</option>
+                {categories.map(cat => (
+                  <option key={cat.slug} value={cat.name}>{cat.name}</option>
+                ))}
               </select>
             </div>
             <div className="mob-filter-select-wrap">
@@ -269,20 +279,20 @@ export default function Navbar() {
                               className="mob-submenu-link"
                               onClick={() => setMobileOpen(false)}
                             >
-                              <span>{course.shortTitle}</span>
-                              {course.isNew && <span className="mob-badge">Yeni</span>}
+                              <span>{course.short_title}</span>
+                              {course.is_new && <span className="mob-badge">Yeni</span>}
                             </Link>
                           ))}
                         </div>
                       ))}
                       {item.name === 'Kategoriler' && categories.map((cat) => (
                         <Link 
-                          key={cat} 
-                          href={`/kurslar?category=${encodeURIComponent(cat)}`} 
+                          key={cat.slug} 
+                          href={`/kurslar?category=${encodeURIComponent(cat.name)}`} 
                           className="mob-submenu-link"
                           onClick={() => setMobileOpen(false)}
                         >
-                          {cat}
+                          {cat.name}
                         </Link>
                       ))}
                       {item.name === 'Eğitmenler' && instructors.map((ins) => (

@@ -17,38 +17,21 @@ import {
   Target,
   BarChart3,
   AlertCircle,
+  Tag,
+  Check,
 } from "lucide-react";
-import { type Course, courses } from "@/data/courses";
-import { instructors } from "@/data/instructors";
+import type { Course, CoursePackage } from "@/lib/types";
+
 
 interface Props {
   course: Course;
+  relatedCourses: Course[];
 }
 
-export default function CourseDetailClient({ course }: Props) {
-  // Try to find the instructor in our dataset for the profile link
-  const instructorData = instructors.find(i => 
-    course.instructor.includes(i.name) || i.name.includes(course.instructor)
-  );
-  const instructorHref = instructorData ? `/egitmenler/${instructorData.slug}` : "#";
+export default function CourseDetailClient({ course, relatedCourses }: Props) {
 
-  // Related courses (same category, excluding current)
-  const relatedCourses = courses
-    .filter((c) => c.category === course.category && c.id !== course.id)
-    .slice(0, 3);
-
-  // If not enough related by category, add more from other categories
-  const moreCourses =
-    relatedCourses.length < 2
-      ? courses
-          .filter(
-            (c) =>
-              c.id !== course.id && !relatedCourses.find((r) => r.id === c.id)
-          )
-          .slice(0, 3 - relatedCourses.length)
-      : [];
-
-  const suggested = [...relatedCourses, ...moreCourses];
+  const primaryInstructor = course.primary_instructor;
+  const allInstructors = course.all_instructors ?? (primaryInstructor ? [primaryInstructor] : []);
 
   return (
     <article className="course-detail-page">
@@ -60,7 +43,7 @@ export default function CourseDetailClient({ course }: Props) {
             <ChevronRight size={14} />
             <Link href="/kurslar">Kurslar</Link>
             <ChevronRight size={14} />
-            <span>{course.shortTitle}</span>
+            <span>{course.short_title}</span>
           </nav>
         </div>
       </div>
@@ -73,14 +56,10 @@ export default function CourseDetailClient({ course }: Props) {
             <div className="course-detail-hero-info">
               <div className="course-detail-badges">
                 <span className="course-detail-code">{course.code}</span>
-                <span
-                  className={`course-card-level level-${course.level.toLowerCase()}`}
-                >
+                <span className={`course-card-level level-${course.level.toLowerCase()}`}>
                   {course.level}
                 </span>
-                {course.isNew && (
-                  <span className="course-card-new">YENİ</span>
-                )}
+                {course.is_new && <span className="course-card-new">YENİ</span>}
               </div>
 
               <h1 className="course-detail-title">{course.title}</h1>
@@ -90,7 +69,9 @@ export default function CourseDetailClient({ course }: Props) {
               <div className="course-detail-quick-meta">
                 <div className="course-detail-meta-chip">
                   <User size={16} />
-                  <span>{course.instructor}</span>
+                  <span>
+                    {allInstructors.map((i) => i.name).join(" & ")}
+                  </span>
                 </div>
                 <div className="course-detail-meta-chip">
                   <Clock size={16} />
@@ -98,7 +79,7 @@ export default function CourseDetailClient({ course }: Props) {
                 </div>
                 <div className="course-detail-meta-chip">
                   <Layers size={16} />
-                  <span>{course.category}</span>
+                  <span>{course.category?.name}</span>
                 </div>
                 <div className="course-detail-meta-chip">
                   <BarChart3 size={16} />
@@ -141,44 +122,45 @@ export default function CourseDetailClient({ course }: Props) {
             {/* Main Content */}
             <div className="course-detail-main">
               {/* Highlights */}
-              <section className="course-detail-section">
-                <h2 className="course-detail-section-title">
-                  <Target size={20} />
-                  Bu Eğitimde Neler Öğreneceksiniz?
-                </h2>
-                <div className="course-detail-highlights-grid">
-                  {course.highlights.map((h, i) => (
-                    <div key={i} className="course-detail-highlight-item">
-                      <CheckCircle2
-                        size={18}
-                        className="course-detail-check"
-                      />
-                      <span>{h}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
+              {course.highlights && course.highlights.length > 0 && (
+                <section className="course-detail-section">
+                  <h2 className="course-detail-section-title">
+                    <Target size={20} />
+                    Bu Eğitimde Neler Öğreneceksiniz?
+                  </h2>
+                  <div className="course-detail-highlights-grid">
+                    {course.highlights.map((h, i) => (
+                      <div key={i} className="course-detail-highlight-item">
+                        <CheckCircle2 size={18} className="course-detail-check" />
+                        <span>{h}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               {/* Topics / Curriculum */}
-              <section className="course-detail-section">
-                <h2 className="course-detail-section-title">
-                  <BookOpen size={20} />
-                  Müfredat
-                </h2>
-                <ol className="course-detail-topics-list">
-                  {course.topics.map((topic, i) => (
-                    <li key={i} className="course-detail-topic-item">
-                      <span className="course-detail-topic-num">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <span>{topic}</span>
-                    </li>
-                  ))}
-                </ol>
-              </section>
+              {course.topics && course.topics.length > 0 && (
+                <section className="course-detail-section">
+                  <h2 className="course-detail-section-title">
+                    <BookOpen size={20} />
+                    Müfredat
+                  </h2>
+                  <ol className="course-detail-topics-list">
+                    {course.topics.map((topic, i) => (
+                      <li key={i} className="course-detail-topic-item">
+                        <span className="course-detail-topic-num">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <span>{topic}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              )}
 
               {/* Prerequisites */}
-              {course.prerequisites.length > 0 && (
+              {course.prerequisites && course.prerequisites.length > 0 && (
                 <section className="course-detail-section">
                   <h2 className="course-detail-section-title">
                     <AlertCircle size={20} />
@@ -194,28 +176,120 @@ export default function CourseDetailClient({ course }: Props) {
                   </ul>
                 </section>
               )}
+
+              {/* Pricing Packages */}
+              {course.packages && course.packages.length > 0 && (
+                <section className="course-detail-section">
+                  <h2 className="course-detail-section-title">
+                    <Tag size={20} />
+                    Fiyat Paketleri
+                  </h2>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                      gap: "1rem",
+                    }}
+                  >
+                    {course.packages.map((pkg: CoursePackage) => (
+                      <div
+                        key={pkg.id}
+                        style={{
+                          border: pkg.is_featured
+                            ? "2px solid var(--accent-color)"
+                            : "1px solid var(--border-color)",
+                          borderRadius: "0.75rem",
+                          padding: "1.5rem",
+                          background: pkg.is_featured
+                            ? "var(--accent-color)/5"
+                            : "var(--bg-secondary)",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "0.75rem",
+                        }}
+                      >
+                        {pkg.is_featured && (
+                          <span
+                            style={{
+                              fontSize: "0.65rem",
+                              fontWeight: 700,
+                              letterSpacing: "2px",
+                              textTransform: "uppercase",
+                              color: "var(--accent-color)",
+                            }}
+                          >
+                            ⭐ Önerilen
+                          </span>
+                        )}
+                        <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700 }}>
+                          {pkg.name}
+                        </h3>
+                        {pkg.price !== null && (
+                          <p
+                            style={{
+                              margin: 0,
+                              fontSize: "1.5rem",
+                              fontWeight: 800,
+                              color: "var(--accent-color)",
+                            }}
+                          >
+                            {pkg.price.toLocaleString("tr-TR")} {pkg.currency}
+                          </p>
+                        )}
+                        {pkg.description && (
+                          <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                            {pkg.description}
+                          </p>
+                        )}
+                        {pkg.features && pkg.features.length > 0 && (
+                          <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                            {pkg.features.map((f, fi) => (
+                              <li key={fi} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem" }}>
+                                <Check size={14} style={{ color: "var(--accent-color)", flexShrink: 0 }} />
+                                {f}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <button className="primary-btn" style={{ marginTop: "auto" }}>
+                          Satın Al
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
             </div>
 
             {/* Sidebar */}
             <aside className="course-detail-sidebar">
-              {/* Instructor Card */}
+              {/* Instructor Card(s) */}
               <div className="course-detail-sidebar-card">
-                <h3 className="course-detail-sidebar-title">Eğitmen</h3>
-                <Link href={instructorHref} className="course-detail-instructor" style={{ textDecoration: 'none' }}>
-                  <div className="course-detail-instructor-img-wrap">
-                    <Image
-                      src={course.instructorImage}
-                      alt={course.instructor}
-                      fill
-                      className="course-detail-instructor-img"
-                      sizes="64px"
-                    />
-                  </div>
-                  <div className="course-detail-instructor-info">
-                    <strong>{course.instructor}</strong>
-                    <span>{course.instructorTitle}</span>
-                  </div>
-                </Link>
+                <h3 className="course-detail-sidebar-title">
+                  {allInstructors.length > 1 ? "Eğitmenler" : "Eğitmen"}
+                </h3>
+                {allInstructors.map((ins) => (
+                  <Link
+                    key={ins.id}
+                    href={`/egitmenler/${ins.slug}`}
+                    className="course-detail-instructor"
+                    style={{ textDecoration: "none", display: "flex", marginBottom: "0.75rem" }}
+                  >
+                    <div className="course-detail-instructor-img-wrap">
+                      <Image
+                        src={ins.image}
+                        alt={ins.name}
+                        fill
+                        className="course-detail-instructor-img"
+                        sizes="64px"
+                      />
+                    </div>
+                    <div className="course-detail-instructor-info">
+                      <strong>{ins.name}</strong>
+                      <span>{ins.title}</span>
+                    </div>
+                  </Link>
+                ))}
               </div>
 
               {/* Course Info Card */}
@@ -226,25 +300,19 @@ export default function CourseDetailClient({ course }: Props) {
                     <span className="course-detail-info-label">
                       <Clock size={15} /> Süre
                     </span>
-                    <span className="course-detail-info-value">
-                      {course.duration}
-                    </span>
+                    <span className="course-detail-info-value">{course.duration}</span>
                   </div>
                   <div className="course-detail-info-row">
                     <span className="course-detail-info-label">
                       <Layers size={15} /> Kategori
                     </span>
-                    <span className="course-detail-info-value">
-                      {course.category}
-                    </span>
+                    <span className="course-detail-info-value">{course.category?.name}</span>
                   </div>
                   <div className="course-detail-info-row">
                     <span className="course-detail-info-label">
                       <BarChart3 size={15} /> Seviye
                     </span>
-                    <span className="course-detail-info-value">
-                      {course.level}
-                    </span>
+                    <span className="course-detail-info-value">{course.level}</span>
                   </div>
                   <div className="course-detail-info-row">
                     <span className="course-detail-info-label">
@@ -252,14 +320,16 @@ export default function CourseDetailClient({ course }: Props) {
                     </span>
                     <span className="course-detail-info-value">Evet</span>
                   </div>
-                  <div className="course-detail-info-row">
-                    <span className="course-detail-info-label">
-                      <BookOpen size={15} /> Konu Sayısı
-                    </span>
-                    <span className="course-detail-info-value">
-                      {course.topics.length} Konu
-                    </span>
-                  </div>
+                  {course.topics && (
+                    <div className="course-detail-info-row">
+                      <span className="course-detail-info-label">
+                        <BookOpen size={15} /> Konu Sayısı
+                      </span>
+                      <span className="course-detail-info-value">
+                        {course.topics.length} Konu
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -267,9 +337,7 @@ export default function CourseDetailClient({ course }: Props) {
               <div className="course-detail-sidebar-card course-detail-sidebar-cta">
                 <GraduationCap size={28} />
                 <h3>Hemen Başlayın</h3>
-                <p>
-                  Kayıt olarak sertifikalı eğitim programına katılın.
-                </p>
+                <p>Kayıt olarak sertifikalı eğitim programına katılın.</p>
                 <button className="primary-btn" style={{ width: "100%" }}>
                   Kayıt Ol
                 </button>
@@ -280,19 +348,13 @@ export default function CourseDetailClient({ course }: Props) {
       </div>
 
       {/* Related Courses */}
-      {suggested.length > 0 && (
+      {relatedCourses.length > 0 && (
         <section className="course-detail-related">
           <div className="container">
-            <h2 className="course-detail-related-title">
-              İlgili Eğitimler
-            </h2>
+            <h2 className="course-detail-related-title">İlgili Eğitimler</h2>
             <div className="course-detail-related-grid">
-              {suggested.map((c) => (
-                <Link
-                  href={`/kurslar/${c.slug}`}
-                  key={c.id}
-                  className="course-card"
-                >
+              {relatedCourses.map((c) => (
+                <Link href={`/kurslar/${c.slug}`} key={c.id} className="course-card">
                   <div className="course-card-img-wrap">
                     <Image
                       src={c.image}
@@ -304,20 +366,19 @@ export default function CourseDetailClient({ course }: Props) {
                     <div className="course-card-overlay" />
                     <div className="course-card-badges">
                       <span className="course-card-code">{c.code}</span>
+                      {c.is_new && <span className="course-card-new">YENİ</span>}
                     </div>
-                    <span
-                      className={`course-card-level level-${c.level.toLowerCase()}`}
-                    >
+                    <span className={`course-card-level level-${c.level.toLowerCase()}`}>
                       {c.level}
                     </span>
                   </div>
                   <div className="course-card-body">
-                    <span className="course-card-category">{c.category}</span>
-                    <h3 className="course-card-title">{c.shortTitle}</h3>
+                    <span className="course-card-category">{c.category?.name}</span>
+                    <h3 className="course-card-title">{c.short_title}</h3>
                     <div className="course-card-meta">
                       <span className="course-card-meta-item">
                         <User size={14} />
-                        {c.instructor}
+                        {c.primary_instructor?.name}
                       </span>
                       <span className="course-card-meta-item">
                         <Clock size={14} />

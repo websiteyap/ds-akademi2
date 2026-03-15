@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
-import { instructors } from '@/data/instructors';
+import { getAllInstructors } from '@/lib/api';
 import Breadcrumb from '@/components/Breadcrumb';
 import { Award, ChevronRight } from 'lucide-react';
 
@@ -10,11 +10,13 @@ export const metadata: Metadata = {
   description: 'DS Akademi\'nin alanında uzman akademisyen ve mühendis kadrosu ile tanışın. TBDY 2018 standartlarında yapısal mühendislik eğitimlerinin öncü isimleri.',
 };
 
-export default function InstructorsPage() {
+export default async function InstructorsPage() {
+  const instructors = await getAllInstructors();
+
   return (
     <main className="instructors-index-page">
       <Breadcrumb items={[{ label: 'Eğitmenler' }]} />
-      
+
       <section className="page-hero">
         <div className="hero-bg-elements">
           <div className="hero-glow hero-glow-1"></div>
@@ -41,21 +43,21 @@ export default function InstructorsPage() {
             {instructors.map(instructor => (
               <Link key={instructor.id} href={`/egitmenler/${instructor.slug}`} className="instructor-index-card">
                 <div className="instructor-index-img-wrap">
-                  <Image 
-                    src={instructor.image} 
-                    alt={instructor.name} 
-                    fill 
-                    className="instructor-index-img" 
-                    sizes="(max-width: 768px) 100vw, 300px" 
+                  <Image
+                    src={instructor.image ?? ''}
+                    alt={instructor.name}
+                    fill
+                    className="instructor-index-img"
+                    sizes="(max-width: 768px) 100vw, 300px"
                   />
                   <div className="instructor-index-overlay">
-                     <span>Profili Görüntüle <ChevronRight size={16} /></span>
+                    <span>Profili Görüntüle <ChevronRight size={16} /></span>
                   </div>
                 </div>
                 <div className="instructor-index-body">
                   <div className="instructor-index-title-wrap">
-                     <Award size={18} />
-                     <span>{instructor.title}</span>
+                    <Award size={18} />
+                    <span>{instructor.title}</span>
                   </div>
                   <h3>{instructor.name}</h3>
                   <p>{instructor.department}</p>

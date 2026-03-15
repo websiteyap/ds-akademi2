@@ -5,49 +5,33 @@ import Link from "next/link";
 import Image from "next/image";
 import Breadcrumb from "@/components/Breadcrumb";
 import {
-  Columns3,
-  Building2,
-  BarChart3,
-  TreePine,
-  Box,
-  Search,
-  X,
-  Grid,
-  ChevronRight,
-  BookOpen,
-  Users,
-  Layers,
-  GraduationCap,
-  ArrowRight,
-  Clock,
-  User,
+  Columns3, Building2, BarChart3, TreePine, Box,
+  Search, X, Grid, ChevronRight, BookOpen, Users,
+  Layers, GraduationCap, ArrowRight, Clock, User,
 } from "lucide-react";
-import { categoryList } from "@/data/categories";
-import { courses } from "@/data/courses";
+import type { Category, Course } from "@/lib/types";
 
-// Icon mapping for dynamic rendering
 const iconMap: Record<string, React.ElementType> = {
-  Columns3,
-  Building2,
-  BarChart3,
-  TreePine,
-  Box,
+  Columns3, Building2, BarChart3, TreePine, Box,
 };
 
-export default function CategoriesClient() {
+interface Props {
+  categories: Category[];
+  courses: Course[];
+  totalInstructors: number;
+}
+
+export default function CategoriesClient({ categories, courses, totalInstructors }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredCategories = useMemo(() => {
-    if (!searchQuery) return categoryList;
-    return categoryList.filter(
+    if (!searchQuery) return categories;
+    return categories.filter(
       (cat) =>
         cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        cat.description.toLowerCase().includes(searchQuery.toLowerCase())
+        (cat.description ?? "").toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery]);
-
-  const totalCourses = courses.length;
-  const totalInstructors = [...new Set(courses.map((c) => c.instructor))].length;
+  }, [categories, searchQuery]);
 
   return (
     <section className="categories-page">
@@ -65,8 +49,8 @@ export default function CategoriesClient() {
               Eğitim <span className="text-gradient">Kategorilerimiz</span>
             </h1>
             <p className="categories-header-desc">
-              Yapısal mühendislik alanında uzmanlaşmış {categoryList.length}{" "}
-              farklı kategoride, {totalCourses} profesyonel eğitim programı
+              Yapısal mühendislik alanında uzmanlaşmış {categories.length}{" "}
+              farklı kategoride, {courses.length} profesyonel eğitim programı
             </p>
           </div>
 
@@ -75,14 +59,14 @@ export default function CategoriesClient() {
             <div className="categories-stat-item">
               <GraduationCap size={20} />
               <div>
-                <strong>{totalCourses}</strong>
+                <strong>{courses.length}</strong>
                 <span>Toplam Kurs</span>
               </div>
             </div>
             <div className="categories-stat-item">
               <Grid size={20} />
               <div>
-                <strong>{categoryList.length}</strong>
+                <strong>{categories.length}</strong>
                 <span>Kategori</span>
               </div>
             </div>
@@ -137,15 +121,19 @@ export default function CategoriesClient() {
           {filteredCategories.map((category) => {
             const IconComponent = iconMap[category.icon] || Grid;
             const categoryCourses = courses.filter(
-              (c) => c.category === category.name
+              (c) => c.category?.name === category.name
             );
+            const categoryInstructors = new Set(
+              categoryCourses.map((c) => c.primary_instructor?.id).filter(Boolean)
+            );
+            const categoryLevels = [...new Set(categoryCourses.map((c) => c.level))];
 
             return (
               <div key={category.slug} className="category-card">
                 {/* Card Header with gradient */}
                 <div
                   className="category-card-header"
-                  style={{ background: category.bgGradient }}
+                  style={{ background: category.bg_gradient ?? "" }}
                 >
                   <div
                     className="category-card-icon"
@@ -165,13 +153,13 @@ export default function CategoriesClient() {
                       </span>
                       <span className="category-card-stat">
                         <Users size={13} />
-                        {category.instructors.length} Eğitmen
+                        {categoryInstructors.size} Eğitmen
                       </span>
                     </div>
                   </div>
                   {/* Level badges */}
                   <div className="category-card-levels">
-                    {category.levels.map((lvl) => (
+                    {categoryLevels.map((lvl) => (
                       <span
                         key={lvl}
                         className={`category-level-badge level-${lvl.toLowerCase()}`}
@@ -201,7 +189,7 @@ export default function CategoriesClient() {
                         <div className="category-course-preview-img">
                           <Image
                             src={course.image}
-                            alt={course.shortTitle}
+                            alt={course.short_title}
                             fill
                             sizes="60px"
                             style={{ objectFit: "cover" }}
@@ -211,11 +199,11 @@ export default function CategoriesClient() {
                           <span className="category-course-preview-code">
                             {course.code}
                           </span>
-                          <strong>{course.shortTitle}</strong>
+                          <strong>{course.short_title}</strong>
                           <div className="category-course-preview-meta">
                             <span>
                               <User size={11} />
-                              {course.instructor}
+                              {course.primary_instructor?.name}
                             </span>
                             <span>
                               <Clock size={11} />
@@ -223,10 +211,7 @@ export default function CategoriesClient() {
                             </span>
                           </div>
                         </div>
-                        <ChevronRight
-                          size={16}
-                          className="category-course-preview-arrow"
-                        />
+                        <ChevronRight size={16} className="category-course-preview-arrow" />
                       </Link>
                     ))}
                   </div>
@@ -237,11 +222,7 @@ export default function CategoriesClient() {
                   <Link
                     href={`/kurslar?category=${encodeURIComponent(category.name)}`}
                     className="category-card-cta"
-                    style={
-                      {
-                        "--cat-color": category.color,
-                      } as React.CSSProperties
-                    }
+                    style={{ "--cat-color": category.color } as React.CSSProperties}
                   >
                     <span>Tüm Kursları Gör</span>
                     <ArrowRight size={16} />
@@ -257,14 +238,8 @@ export default function CategoriesClient() {
           <div className="categories-empty">
             <Search size={48} />
             <h3>Sonuç Bulunamadı</h3>
-            <p>
-              Arama kriterlerinize uygun kategori bulunamadı. Farklı
-              kelimeler deneyin.
-            </p>
-            <button
-              className="courses-clear-btn"
-              onClick={() => setSearchQuery("")}
-            >
+            <p>Arama kriterlerinize uygun kategori bulunamadı. Farklı kelimeler deneyin.</p>
+            <button className="courses-clear-btn" onClick={() => setSearchQuery("")}>
               Aramayı Temizle
             </button>
           </div>

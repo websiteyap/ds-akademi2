@@ -4,11 +4,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, GraduationCap, ArrowRight } from 'lucide-react';
-import { courses } from '@/data/courses';
+import type { Course } from '@/lib/types';
 
 const AUTO_PLAY_INTERVAL = 5000;
 
-export default function HeroSlider() {
+interface Props {
+  courses: Course[];
+}
+
+export default function HeroSlider({ courses }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -20,7 +24,7 @@ export default function HeroSlider() {
     setCurrentIndex(prev => (prev === courses.length - 1 ? 0 : prev + 1));
     setProgress(0);
     setTimeout(() => setIsTransitioning(false), 650);
-  }, [isTransitioning]);
+  }, [isTransitioning, courses.length]);
 
   const prevSlide = useCallback(() => {
     if (isTransitioning) return;
@@ -28,7 +32,7 @@ export default function HeroSlider() {
     setCurrentIndex(prev => (prev === 0 ? courses.length - 1 : prev - 1));
     setProgress(0);
     setTimeout(() => setIsTransitioning(false), 650);
-  }, [isTransitioning]);
+  }, [isTransitioning, courses.length]);
 
   const goToSlide = useCallback((index: number) => {
     if (isTransitioning || index === currentIndex) return;
@@ -41,9 +45,7 @@ export default function HeroSlider() {
   // Auto-play
   useEffect(() => {
     if (!isAutoPlaying) return;
-    const interval = setInterval(() => {
-      nextSlide();
-    }, AUTO_PLAY_INTERVAL);
+    const interval = setInterval(() => { nextSlide(); }, AUTO_PLAY_INTERVAL);
     return () => clearInterval(interval);
   }, [isAutoPlaying, nextSlide]);
 
@@ -62,22 +64,21 @@ export default function HeroSlider() {
   const getSlideClass = (index: number) => {
     let diff = index - currentIndex;
     const half = courses.length / 2;
-    
     if (diff < -half) diff += courses.length;
     if (diff > half) diff -= courses.length;
-
     if (diff === 0) return "slide active";
     if (diff === -1) return "slide prev";
     if (diff === 1) return "slide next";
     if (diff === -2) return "slide prev2";
     if (diff === 2) return "slide next2";
-    
     if (diff < 0) return "slide hidden-left";
-    else return "slide hidden-right";
+    return "slide hidden-right";
   };
 
+  if (!courses.length) return null;
+
   return (
-    <section 
+    <section
       className="hero-slider-section"
       onMouseEnter={() => setIsAutoPlaying(false)}
       onMouseLeave={() => setIsAutoPlaying(true)}
@@ -108,18 +109,18 @@ export default function HeroSlider() {
         {courses.map((course, index) => {
           const slideClass = getSlideClass(index);
           return (
-            <div 
-              key={course.id} 
+            <div
+              key={course.id}
               className={slideClass}
               onClick={() => {
                 if (slideClass.includes('prev')) prevSlide();
                 if (slideClass.includes('next')) nextSlide();
               }}
             >
-              <Image 
-                src={course.image} 
-                alt={course.title} 
-                fill 
+              <Image
+                src={course.image}
+                alt={course.title}
+                fill
                 className="slide-image"
                 sizes="(max-width: 768px) 100vw, 45vw"
                 priority={index === currentIndex || slideClass.includes('prev') || slideClass.includes('next')}
@@ -156,8 +157,8 @@ export default function HeroSlider() {
                 aria-label={`Slayt ${index + 1}`}
               >
                 {index === currentIndex && (
-                  <span 
-                    className="hero-slider-dot-progress" 
+                  <span
+                    className="hero-slider-dot-progress"
                     style={{ width: `${isAutoPlaying ? progress : 100}%` }}
                   />
                 )}

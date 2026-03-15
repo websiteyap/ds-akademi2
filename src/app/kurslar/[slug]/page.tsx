@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { courses, getCourseBySlug } from "@/data/courses";
+import { getAllCourses, getCourseBySlug, getRelatedCourses } from "@/lib/api";
 import { notFound } from "next/navigation";
 import CourseDetailClient from "./CourseDetailClient";
 
@@ -8,14 +8,13 @@ interface Props {
 }
 
 export async function generateStaticParams() {
-  return courses.map((course) => ({
-    slug: course.slug,
-  }));
+  const courses = await getAllCourses();
+  return courses.map((course) => ({ slug: course.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const course = getCourseBySlug(slug);
+  const course = await getCourseBySlug(slug);
   if (!course) return { title: "Kurs Bulunamadı | DS Akademi" };
 
   return {
@@ -23,8 +22,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: course.description,
     keywords: [
       course.title,
-      course.category,
-      course.instructor,
+      course.category?.name ?? "",
+      course.primary_instructor?.name ?? "",
       "TBDY 2018",
       "yapısal mühendislik eğitimi",
       "DS Akademi",
@@ -39,11 +38,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CourseDetailPage({ params }: Props) {
   const { slug } = await params;
-  const course = getCourseBySlug(slug);
+  const course = await getCourseBySlug(slug);
 
-  if (!course) {
-    notFound();
-  }
+  if (!course) notFound();
 
-  return <CourseDetailClient course={course} />;
+  // Fetch related courses SERVER-SIDE — never in the client component
+  const relatedCourses = await getRelatedCourses(
+    course!.category?.id ?? "",
+    slug,
+    3
+  );
+
+  return <CourseDetailClient course={course!} relatedCourses={relatedCourses} />;
 }

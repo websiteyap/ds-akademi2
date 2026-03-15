@@ -19,28 +19,179 @@ import {
   Sun,
   Moon,
   Menu,
+  PlusCircle,
+  Users,
+  Group,
+  FileText,
+  PenLine,
+  ScrollText,
+  Tag,
+  UserCheck,
+  BarChart2,
+  Shield,
+  FileStack,
+  Wrench,
 } from 'lucide-react';
 
-const navItems = [
-  { href: '/dashboard', label: 'Genel Bakış', icon: LayoutDashboard },
-  { href: '/dashboard/kurslarim', label: 'Kurslarım', icon: BookOpen },
-  { href: '/dashboard/sertifikalar', label: 'Sertifikalarım', icon: Award },
-  { href: '/dashboard/profil', label: 'Profilim', icon: User },
-  { href: '/dashboard/ayarlar', label: 'Ayarlar', icon: Settings },
+// ─── Nav Definitions ────────────────────────────────────────────
+
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+const studentNav: NavSection[] = [
+  {
+    title: 'Menü',
+    items: [
+      { href: '/dashboard',              label: 'Genel Bakış',   icon: LayoutDashboard },
+      { href: '/dashboard/kurslarim',    label: 'Kurslarım',     icon: BookOpen        },
+      { href: '/dashboard/sertifikalar', label: 'Sertifikalarım', icon: Award           },
+    ],
+  },
+  {
+    title: 'Hesap',
+    items: [
+      { href: '/dashboard/profil',  label: 'Profilim', icon: User     },
+      { href: '/dashboard/ayarlar', label: 'Ayarlar',  icon: Settings },
+    ],
+  },
 ];
+
+const getInstructorNav = (canWriteBlog: boolean): NavSection[] => [
+  {
+    title: 'Kurslarım',
+    items: [
+      { href: '/dashboard/egitmen/kurslarim',      label: 'Tüm Kurslarım',     icon: BookOpen    },
+      { href: '/dashboard/egitmen/kurs-olustur',   label: 'Yeni Kurs Oluştur', icon: PlusCircle  },
+    ],
+  },
+  {
+    title: 'Sınıf',
+    items: [
+      { href: '/dashboard/egitmen/ogrenciler', label: 'Öğrenciler', icon: Users },
+      { href: '/dashboard/egitmen/gruplar',    label: 'Gruplar',    icon: Group },
+    ],
+  },
+  {
+    title: 'Materyaller',
+    items: [
+      { href: '/dashboard/egitmen/dokumanlar', label: 'Dökümanlarım', icon: FileText },
+    ],
+  },
+  ...(canWriteBlog
+    ? [{
+        title: 'Blog',
+        items: [
+          { href: '/dashboard/egitmen/bloglarim', label: 'Bloglarım',  icon: ScrollText },
+          { href: '/dashboard/egitmen/blog-yaz',  label: 'Blog Yaz',   icon: PenLine    },
+        ],
+      }]
+    : []),
+  {
+    title: 'Hesap',
+    items: [
+      { href: '/dashboard/egitmen/profil',  label: 'Profil & Ayarlar', icon: User },
+    ],
+  },
+];
+
+const adminNav: NavSection[] = [
+  {
+    title: 'Kurslar',
+    items: [
+      { href: '/dashboard/admin/kurslar',           label: 'Tüm Kurslar',       icon: BookOpen  },
+      { href: '/dashboard/admin/kurs-guncelleme',   label: 'Kurs Güncellemesi', icon: PenLine   },
+    ],
+  },
+  {
+    title: 'Kategoriler',
+    items: [
+      { href: '/dashboard/admin/kategoriler',       label: 'Tüm Kategoriler',   icon: Tag        },
+      { href: '/dashboard/admin/kategori-olustur',  label: 'Kategori Oluştur',  icon: PlusCircle },
+    ],
+  },
+  {
+    title: 'Eğitmenler',
+    items: [
+      { href: '/dashboard/admin/egitmenler',    label: 'Tüm Eğitmenler', icon: UserCheck  },
+      { href: '/dashboard/admin/egitmen-ekle',  label: 'Eğitmen Ekle',   icon: PlusCircle },
+    ],
+  },
+  {
+    title: 'Raporlar',
+    items: [
+      { href: '/dashboard/admin/satis-raporlari',    label: 'Satış Raporları',   icon: BarChart2 },
+      { href: '/dashboard/admin/kullanici-raporlari',label: 'Kullanıcı Raporları', icon: Users   },
+    ],
+  },
+  {
+    title: 'Kullanıcılar',
+    items: [
+      { href: '/dashboard/admin/kullanicilar', label: 'Tüm Kullanıcılar', icon: Users  },
+      { href: '/dashboard/admin/roller',       label: 'Roller',            icon: Shield },
+    ],
+  },
+  {
+    title: 'Sayfalar',
+    items: [
+      { href: '/dashboard/admin/politika-sayfalari', label: 'Politika Sayfaları', icon: FileStack },
+      { href: '/dashboard/admin/hakkimizda',         label: 'Hakkımızda',         icon: ScrollText },
+      { href: '/dashboard/admin/iletisim',           label: 'İletişim',           icon: FileText   },
+    ],
+  },
+  {
+    title: 'Site',
+    items: [
+      { href: '/dashboard/admin/site-ayarlari', label: 'Site Ayarları', icon: Wrench },
+    ],
+  },
+];
+
+// ─── Helper: map role to nav sections ───────────────────────────
+
+function getNavSections(role: string, canWriteBlog: boolean): NavSection[] {
+  if (role === 'admin')      return adminNav;
+  if (role === 'instructor') return getInstructorNav(canWriteBlog);
+  return studentNav;
+}
+
+// ─── Props ───────────────────────────────────────────────────────
 
 interface DashboardSidebarProps {
   userName?: string | null;
   userEmail?: string | null;
   userImage?: string | null;
   userRole?: string;
+  canWriteBlog?: boolean;
   mobileOpen?: boolean;
   onClose?: () => void;
 }
 
-function SidebarContent({ userName, userEmail, userImage, userRole, onClose }: DashboardSidebarProps) {
+// ─── Panel label helper ──────────────────────────────────────────
+
+function getPanelLabel(role?: string) {
+  if (role === 'admin')      return 'Yönetici Paneli';
+  if (role === 'instructor') return 'Eğitmen Paneli';
+  return 'Öğrenci Paneli';
+}
+
+// ─── Sidebar Content ─────────────────────────────────────────────
+
+function SidebarContent({
+  userName, userEmail, userImage, userRole, canWriteBlog = false, onClose,
+}: DashboardSidebarProps) {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
+
+  const sections = getNavSections(userRole ?? 'student', canWriteBlog);
+  const panelLabel = getPanelLabel(userRole);
 
   return (
     <div className="flex flex-col h-full">
@@ -60,7 +211,7 @@ function SidebarContent({ userName, userEmail, userImage, userRole, onClose }: D
               DS <span className="text-[var(--accent-color)]">AKADEMİ</span>
             </span>
             <span className="text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-widest">
-              Öğrenci Paneli
+              {panelLabel}
             </span>
           </div>
         </Link>
@@ -77,48 +228,60 @@ function SidebarContent({ userName, userEmail, userImage, userRole, onClose }: D
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3">
-        <p className="text-[10px] font-bold uppercase tracking-[2px] text-[var(--text-secondary)] px-3 mb-2">
-          Menü
-        </p>
-        <ul className="space-y-0.5">
-          {navItems.map(({ href, label, icon: Icon }) => {
-            const isActive = href === '/dashboard'
-              ? pathname === '/dashboard'
-              : pathname.startsWith(href);
-            return (
-              <li key={href}>
-                <Link
-                  href={href}
-                  onClick={onClose}
-                  className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded text-sm font-semibold
-                    transition-all duration-150 group relative
-                    ${isActive
-                      ? 'bg-[var(--accent-color)] text-white shadow-sm'
-                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
-                    }
-                  `}
-                >
-                  <Icon size={18} className={isActive ? 'text-white' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'} />
-                  <span className="flex-1">{label}</span>
-                  {isActive && <ChevronRight size={14} className="opacity-70" />}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
+        {sections.map((section) => (
+          <div key={section.title}>
+            <p className="text-[10px] font-bold uppercase tracking-[2px] text-[var(--text-secondary)] px-3 mb-1.5">
+              {section.title}
+            </p>
+            <ul className="space-y-0.5">
+              {section.items.map(({ href, label, icon: Icon }) => {
+                const isActive =
+                  href === '/dashboard'
+                    ? pathname === '/dashboard'
+                    : pathname.startsWith(href);
+                return (
+                  <li key={href}>
+                    <Link
+                      href={href}
+                      onClick={onClose}
+                      className={`
+                        flex items-center gap-3 px-3 py-2.5 rounded text-sm font-semibold
+                        transition-all duration-150 group relative
+                        ${isActive
+                          ? 'bg-[var(--accent-color)] text-white shadow-sm'
+                          : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
+                        }
+                      `}
+                    >
+                      <Icon
+                        size={17}
+                        className={isActive ? 'text-white' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}
+                      />
+                      <span className="flex-1">{label}</span>
+                      {isActive && <ChevronRight size={14} className="opacity-70" />}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
 
-        <div className="my-4 border-t border-[var(--border-color)]" />
-
-        <Link
-          href="/kurslar"
-          onClick={onClose}
-          className="flex items-center gap-3 px-3 py-2.5 rounded text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-color)] transition-all group"
-        >
-          <GraduationCap size={18} />
-          <span>Tüm Kurslar</span>
-        </Link>
+        {/* All courses shortcut (only for students) */}
+        {(!userRole || userRole === 'student') && (
+          <>
+            <div className="border-t border-[var(--border-color)]" />
+            <Link
+              href="/kurslar"
+              onClick={onClose}
+              className="flex items-center gap-3 px-3 py-2.5 rounded text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-color)] transition-all group"
+            >
+              <GraduationCap size={17} />
+              <span>Tüm Kurslar</span>
+            </Link>
+          </>
+        )}
       </nav>
 
       {/* User info + controls */}
@@ -166,6 +329,8 @@ function SidebarContent({ userName, userEmail, userImage, userRole, onClose }: D
   );
 }
 
+// ─── Main Export ─────────────────────────────────────────────────
+
 export default function DashboardSidebar(props: DashboardSidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -176,7 +341,7 @@ export default function DashboardSidebar(props: DashboardSidebarProps) {
         <SidebarContent {...props} />
       </aside>
 
-      {/* Mobile hamburger trigger — shown in topbar context via sibling */}
+      {/* Mobile hamburger trigger */}
       <button
         id="sidebar-mobile-trigger"
         onClick={() => setMobileOpen(true)}

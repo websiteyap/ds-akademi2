@@ -17,12 +17,18 @@ import {
   GraduationCap,
   BarChart3,
 } from "lucide-react";
-import { courses, categories, levels } from "@/data/courses";
 import { useSearchParams } from "next/navigation";
+import type { Course } from "@/lib/types";
 
-export default function CoursesClient() {
+interface Props {
+  courses: Course[];
+  categoryNames: string[];
+  levels: string[];
+}
+
+export default function CoursesClient({ courses, categoryNames, levels }: Props) {
   const searchParams = useSearchParams();
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedLevel, setSelectedLevel] = useState("");
@@ -36,21 +42,24 @@ export default function CoursesClient() {
 
   const filteredCourses = useMemo(() => {
     return courses.filter((course) => {
+      const instructorName = course.primary_instructor?.name ?? "";
+      const categoryName = course.category?.name ?? "";
+
       const matchSearch =
         !searchQuery ||
         course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.instructor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        instructorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         course.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.category.toLowerCase().includes(searchQuery.toLowerCase());
+        categoryName.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchCategory =
-        !selectedCategory || course.category === selectedCategory;
+        !selectedCategory || categoryName === selectedCategory;
 
       const matchLevel = !selectedLevel || course.level === selectedLevel;
 
       return matchSearch && matchCategory && matchLevel;
     });
-  }, [searchQuery, selectedCategory, selectedLevel]);
+  }, [courses, searchQuery, selectedCategory, selectedLevel]);
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -62,7 +71,7 @@ export default function CoursesClient() {
 
   return (
     <section className="courses-page">
-      <Breadcrumb items={[{ label: 'Kurslar' }]} />
+      <Breadcrumb items={[{ label: "Kurslar" }]} />
       {/* Page Header */}
       <div className="courses-page-header">
         <div className="container">
@@ -114,7 +123,7 @@ export default function CoursesClient() {
                 className="courses-filter-select"
               >
                 <option value="">Tüm Kategoriler</option>
-                {categories.map((cat) => (
+                {categoryNames.map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
                   </option>
@@ -160,7 +169,7 @@ export default function CoursesClient() {
                 className="courses-filter-select"
               >
                 <option value="">Tüm Kategoriler</option>
-                {categories.map((cat) => (
+                {categoryNames.map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
                   </option>
@@ -202,11 +211,7 @@ export default function CoursesClient() {
         {/* Course Grid */}
         <div className="courses-grid">
           {filteredCourses.map((course) => (
-            <Link
-              href={`/kurslar/${course.slug}`}
-              key={course.id}
-              className="course-card"
-            >
+            <Link href={`/kurslar/${course.slug}`} key={course.id} className="course-card">
               <div className="course-card-img-wrap">
                 <Image
                   src={course.image}
@@ -218,25 +223,21 @@ export default function CoursesClient() {
                 <div className="course-card-overlay" />
                 <div className="course-card-badges">
                   <span className="course-card-code">{course.code}</span>
-                  {course.isNew && (
-                    <span className="course-card-new">YENİ</span>
-                  )}
+                  {course.is_new && <span className="course-card-new">YENİ</span>}
                 </div>
-                <span
-                  className={`course-card-level level-${course.level.toLowerCase()}`}
-                >
+                <span className={`course-card-level level-${course.level.toLowerCase()}`}>
                   {course.level}
                 </span>
               </div>
 
               <div className="course-card-body">
-                <span className="course-card-category">{course.category}</span>
-                <h3 className="course-card-title">{course.shortTitle}</h3>
+                <span className="course-card-category">{course.category?.name}</span>
+                <h3 className="course-card-title">{course.short_title}</h3>
 
                 <div className="course-card-meta">
                   <span className="course-card-meta-item">
                     <User size={14} />
-                    {course.instructor}
+                    {course.primary_instructor?.name}
                   </span>
                   <span className="course-card-meta-item">
                     <Clock size={14} />
@@ -260,10 +261,7 @@ export default function CoursesClient() {
           <div className="courses-empty">
             <BarChart3 size={48} />
             <h3>Sonuç Bulunamadı</h3>
-            <p>
-              Arama kriterlerinize uygun kurs bulunamadı. Filtreleri
-              değiştirmeyi deneyin.
-            </p>
+            <p>Arama kriterlerinize uygun kurs bulunamadı. Filtreleri değiştirmeyi deneyin.</p>
             <button className="courses-clear-btn" onClick={clearFilters}>
               Filtreleri Temizle
             </button>

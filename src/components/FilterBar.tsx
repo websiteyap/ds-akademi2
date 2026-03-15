@@ -1,13 +1,19 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Search, MapPin, Grid, Layers } from 'lucide-react';
+import { Search, Grid, Layers } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
+import type { Category, Course } from '@/lib/types';
 
-export default function FilterBar() {
+interface Props {
+  categories: Category[];
+  courses: Course[];
+}
+
+export default function FilterBar({ categories }: Props) {
   const pathname = usePathname();
   const router = useRouter();
-  
+
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [level, setLevel] = useState("");
@@ -22,7 +28,6 @@ export default function FilterBar() {
     if (search) params.set("search", search);
     if (category) params.set("category", category);
     if (level) params.set("level", level);
-    
     router.push(`/kurslar?${params.toString()}`);
   };
 
@@ -30,35 +35,33 @@ export default function FilterBar() {
     <div className="filter-bar-wrapper">
       <div className="container">
         <form className="filter-grid" onSubmit={handleSearch}>
-          
+
           <div className="filter-input-group">
             <div className="filter-icon">
               <Search size={20} />
             </div>
-            <input 
-              type="text" 
-              placeholder="Kurs, Eğitmen ara..." 
+            <input
+              type="text"
+              placeholder="Kurs, Eğitmen ara..."
               className="filter-input"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          
+
           <div className="filter-input-group">
             <div className="filter-icon">
               <Grid size={20} />
             </div>
-            <select 
-              className="filter-select" 
+            <select
+              className="filter-select"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
               <option value="" disabled>Kategori Seçin</option>
-              <option value="Çelik Yapı Tasarımı">Çelik Yapı Tasarımı</option>
-              <option value="Betonarme Yapı">Betonarme Yapı Tasarımı</option>
-              <option value="Ahşap Yapı">Yapısal Ahşap Tasarımı</option>
-              <option value="BIM">BIM (Bina Bilgi Modelleme)</option>
-              <option value="Performans Analizi">Performans Analizi</option>
+              {categories.map((cat) => (
+                <option key={cat.slug} value={cat.name}>{cat.name}</option>
+              ))}
             </select>
           </div>
 
@@ -66,8 +69,8 @@ export default function FilterBar() {
             <div className="filter-icon">
               <Layers size={20} />
             </div>
-            <select 
-              className="filter-select" 
+            <select
+              className="filter-select"
               value={level}
               onChange={(e) => setLevel(e.target.value)}
             >
@@ -77,11 +80,9 @@ export default function FilterBar() {
               <option value="İleri">İleri</option>
             </select>
           </div>
-          
-          <button type="submit" className="search-btn">
-            ARA
-          </button>
-          
+
+          <button type="submit" className="search-btn">ARA</button>
+
         </form>
       </div>
     </div>

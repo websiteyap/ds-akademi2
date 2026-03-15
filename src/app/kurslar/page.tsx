@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import CoursesClient from "./CoursesClient";
 import { Suspense } from "react";
+import { getAllCourses, getAllCategories } from "@/lib/api";
+import CoursesClient from "./CoursesClient";
 
 export const metadata: Metadata = {
   title: "Eğitim Programları | DS Akademi",
@@ -18,10 +19,22 @@ export const metadata: Metadata = {
   ],
 };
 
-export default function CoursesPage() {
+export default async function CoursesPage() {
+  const [courses, categories] = await Promise.all([
+    getAllCourses(),
+    getAllCategories(),
+  ]);
+
+  const categoryNames = [...new Set(courses.map((c) => c.category?.name).filter(Boolean))] as string[];
+  const levels = ["Temel", "Orta", "İleri"] as const;
+
   return (
     <Suspense fallback={<div className="container" style={{ padding: '4rem 0', textAlign: 'center' }}>Yükleniyor...</div>}>
-      <CoursesClient />
+      <CoursesClient
+        courses={courses}
+        categoryNames={categoryNames}
+        levels={[...levels]}
+      />
     </Suspense>
   );
 }

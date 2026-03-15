@@ -2,59 +2,59 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Search, MessageCircle, FileText } from 'lucide-react';
-import { faqs, FAQCategory, FAQ } from '@/data/faqs';
+import { ChevronDown, Search, MessageCircle, FileText, HelpCircle, PlayCircle, CreditCard, Award, Settings } from 'lucide-react';
+import type { FaqCategory } from '@/lib/types';
 import Breadcrumb from '@/components/Breadcrumb';
 
-export default function FaqClient() {
+// Map icon names from DB to actual Lucide components
+const iconMap: Record<string, React.ElementType> = {
+  HelpCircle, PlayCircle, CreditCard, Award, Settings,
+};
+
+interface Props {
+  faqCategories: FaqCategory[];
+}
+
+export default function FaqClient({ faqCategories }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState<string>('genel');
+  const [activeCategory, setActiveCategory] = useState<string>(
+    faqCategories[0]?.slug ?? ''
+  );
   const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
 
   const toggleItem = (id: string) => {
-    setOpenItems(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
+    setOpenItems(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   // Filter logic
-  const filteredData = faqs.map(cat => {
-    if (!searchQuery) {
-      return cat;
-    }
-    
-    const matchedFaqs = cat.faqs.filter(f => 
-      f.question.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredData = faqCategories.map(cat => {
+    if (!searchQuery) return cat;
+    const matchedFaqs = cat.faqs.filter(f =>
+      f.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
       f.answer.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    
     return { ...cat, faqs: matchedFaqs };
   }).filter(cat => cat.faqs.length > 0);
 
-  const displayCategory = searchQuery ? filteredData[0]?.id : activeCategory;
-  const currentCategoryData = filteredData.find(c => c.id === displayCategory);
+  const displayCategory = searchQuery ? filteredData[0]?.slug : activeCategory;
+  const currentCategoryData = filteredData.find(c => c.slug === displayCategory);
 
   return (
     <main className="faq-page">
       {/* Header */}
       <section className="faq-header-sec">
-        <Breadcrumb 
-          items={[
-            { label: 'Sıkça Sorulan Sorular', href: '/sss' }
-          ]} 
-        />
+        <Breadcrumb items={[{ label: 'Sıkça Sorulan Sorular', href: '/sss' }]} />
         <div className="container">
           <div className="faq-header-content">
             <h1 className="faq-title">Nasıl Yardımcı Olabiliriz?</h1>
             <p className="faq-desc">
-              Eğitim programlarımız, ödeme süreçleri, sertifikasyon veya sisteme giriş ile 
+              Eğitim programlarımız, ödeme süreçleri, sertifikasyon veya sisteme giriş ile
               ilgili aklınıza takılan tüm soruların cevaplarını burada bulabilirsiniz.
             </p>
             <div className="faq-search-box">
               <Search className="faq-search-icon" size={20} />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Örn: Sertifikalar ne zaman verilir?"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -69,20 +69,20 @@ export default function FaqClient() {
       <section className="faq-content-sec">
         <div className="container">
           <div className="faq-layout">
-            
+
             {/* Sidebar Categories */}
             <aside className="faq-sidebar">
               <h3 className="faq-sidebar-title">Kategoriler</h3>
               <nav className="faq-cat-nav">
-                {faqs.map((cat) => {
-                  const Icon = cat.icon;
+                {faqCategories.map((cat) => {
+                  const Icon = iconMap[cat.icon] ?? HelpCircle;
                   return (
                     <button
                       key={cat.id}
-                      className={`faq-cat-btn ${(!searchQuery && activeCategory === cat.id) ? 'active' : ''}`}
+                      className={`faq-cat-btn ${(!searchQuery && activeCategory === cat.slug) ? 'active' : ''}`}
                       onClick={() => {
                         setSearchQuery('');
-                        setActiveCategory(cat.id);
+                        setActiveCategory(cat.slug);
                       }}
                     >
                       <Icon size={18} />
@@ -96,9 +96,7 @@ export default function FaqClient() {
                 <MessageCircle size={24} className="faq-contact-icon" />
                 <h4>Aradığınızı Bulamadınız mı?</h4>
                 <p>Destek ekibimizle iletişime geçebilirsiniz.</p>
-                <Link href="/iletisim" className="faq-contact-link">
-                  Bize Ulaşın
-                </Link>
+                <Link href="/iletisim" className="faq-contact-link">Bize Ulaşın</Link>
               </div>
             </aside>
 
@@ -106,7 +104,7 @@ export default function FaqClient() {
             <div className="faq-questions-area">
               {searchQuery && (
                 <div className="faq-search-results-info">
-                  "{searchQuery}" için sonuçlar gösteriliyor
+                  &ldquo;{searchQuery}&rdquo; için sonuçlar gösteriliyor
                   <button onClick={() => setSearchQuery('')}>Temizle</button>
                 </div>
               )}
@@ -114,7 +112,10 @@ export default function FaqClient() {
               {currentCategoryData ? (
                 <>
                   <div className="faq-cat-header">
-                    <currentCategoryData.icon size={28} />
+                    {(() => {
+                      const Icon = iconMap[currentCategoryData.icon] ?? HelpCircle;
+                      return <Icon size={28} />;
+                    })()}
                     <h2>{currentCategoryData.name}</h2>
                   </div>
 
@@ -123,20 +124,17 @@ export default function FaqClient() {
                       const isOpen = !!openItems[faq.id];
                       return (
                         <div key={faq.id} className={`faq-item ${isOpen ? 'open' : ''}`}>
-                          <button 
+                          <button
                             className="faq-question-btn"
                             onClick={() => toggleItem(faq.id)}
                             aria-expanded={isOpen}
                           >
                             <span className="faq-question-text">{faq.question}</span>
-                            <ChevronDown 
-                              className="faq-chevron" 
-                              size={20} 
-                            />
+                            <ChevronDown className="faq-chevron" size={20} />
                           </button>
-                          <div 
+                          <div
                             className="faq-answer-wrapper"
-                            style={{ 
+                            style={{
                               maxHeight: isOpen ? '500px' : '0',
                               opacity: isOpen ? 1 : 0
                             }}

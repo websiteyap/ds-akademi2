@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getAllCategories, getAllCourses } from "@/lib/api";
 import CategoriesClient from "./CategoriesClient";
 
 export const metadata: Metadata = {
@@ -16,6 +17,21 @@ export const metadata: Metadata = {
   ],
 };
 
-export default function CategoriesPage() {
-  return <CategoriesClient />;
+export default async function CategoriesPage() {
+  const [categories, courses] = await Promise.all([
+    getAllCategories(),
+    getAllCourses(),
+  ]);
+
+  const totalInstructors = new Set(
+    courses.map((c) => c.primary_instructor?.id).filter(Boolean)
+  ).size;
+
+  return (
+    <CategoriesClient
+      categories={categories}
+      courses={courses}
+      totalInstructors={totalInstructors}
+    />
+  );
 }

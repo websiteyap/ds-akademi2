@@ -5,8 +5,15 @@ import { Mail, Phone, MapPin, Linkedin, Instagram, Twitter, Youtube, ChevronRigh
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import type { Category, Course, SiteSettings } from '@/lib/types';
 
-export default function Footer() {
+interface Props {
+  courses: Course[];
+  categories: Category[];
+  settings: SiteSettings | null;
+}
+
+export default function Footer({ courses, categories, settings }: Props) {
   const pathname = usePathname();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
@@ -27,7 +34,7 @@ export default function Footer() {
 
   return (
     <footer className="footer-section" role="contentinfo" itemScope itemType="https://schema.org/Organization">
-      
+
       {/* Newsletter Section */}
       <div className="footer-newsletter">
         <div className="container footer-newsletter-inner">
@@ -70,52 +77,76 @@ export default function Footer() {
 
       {/* Main Footer Content */}
       <div className="container footer-container">
-        
-        {/* Kolon 1: Marka & Hakkında */}
+
+        {/* Kolon 1: Marka */}
         <div className="footer-col brand-col">
           <Link href="/" className="logo footer-logo" aria-label="DS Akademi Ana Sayfa">
             <Image src="/logo.png" alt="DS Akademi Logo" width={80} height={80} style={{ objectFit: 'contain' }} />
           </Link>
           <p className="footer-desc" itemProp="description">
-            DS Akademi, Türkiye'nin önde gelen üniversitelerinde aktif görev yapan akademisyenler tarafından kurulan yapısal mühendislik eğitim platformudur. TBDY 2018 standartlarında, performansa dayalı tasarım odaklı sertifikalı eğitimler sunmaktadır.
+            {settings?.footer_about ?? 'DS Akademi, Türkiye\'nin önde gelen üniversitelerinde aktif görev yapan akademisyenler tarafından kurulan yapısal mühendislik eğitim platformudur.'}
           </p>
           <div className="footer-socials">
-            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="social-icon"><Linkedin size={18} /></a>
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="social-icon"><Instagram size={18} /></a>
-            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter" className="social-icon"><Twitter size={18} /></a>
-            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="social-icon"><Youtube size={18} /></a>
+            {(settings?.linkedin_url ?? 'https://linkedin.com') && (
+              <a href={settings?.linkedin_url ?? 'https://linkedin.com'} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="social-icon"><Linkedin size={18} /></a>
+            )}
+            {(settings?.instagram_url ?? 'https://instagram.com') && (
+              <a href={settings?.instagram_url ?? 'https://instagram.com'} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="social-icon"><Instagram size={18} /></a>
+            )}
+            {(settings?.twitter_url ?? 'https://twitter.com') && (
+              <a href={settings?.twitter_url ?? 'https://twitter.com'} target="_blank" rel="noopener noreferrer" aria-label="Twitter" className="social-icon"><Twitter size={18} /></a>
+            )}
+            {(settings?.youtube_url ?? 'https://youtube.com') && (
+              <a href={settings?.youtube_url ?? 'https://youtube.com'} target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="social-icon"><Youtube size={18} /></a>
+            )}
           </div>
         </div>
 
-        {/* Kolon 2: Eğitim Programları (SEO) */}
+        {/* Kolon 2: Eğitim Programları — DB'den kurslar */}
         <nav className="footer-col" aria-label="Eğitim Programları">
           <h4 className="footer-title">
             <BookOpen size={16} className="footer-title-icon" />
             Eğitim Programları
           </h4>
           <ul className="footer-links">
-            <li><Link href="/kurslar/temel-celik-yapi-tasarimi"><ChevronRight size={14}/> Temel Çelik Yapı Tasarımı</Link></li>
-            <li><Link href="/kurslar/temel-betonarme-yapi-tasarimi"><ChevronRight size={14}/> Temel Betonarme Yapı Tasarımı</Link></li>
-            <li><Link href="/kurslar/depreme-dayanikli-celik-yapi-tasarimi"><ChevronRight size={14}/> Depreme Dayanıklı Çelik Tasarım</Link></li>
-            <li><Link href="/kurslar/depreme-dayanikli-betonarme-tasarim"><ChevronRight size={14}/> Depreme Dayanıklı Betonarme Tasarım</Link></li>
-            <li><Link href="/kurslar/performansa-dayali-yapi-analizi"><ChevronRight size={14}/> Performansa Dayalı Yapı Analizi</Link></li>
-            <li><Link href="/kurslar/yapisal-ahsap-tasarimi"><ChevronRight size={14}/> Yapısal Ahşap Tasarım</Link></li>
-            <li><Link href="/kurslar/bina-bilgi-modelleme-bim"><ChevronRight size={14}/> Bina Bilgi Modelleme (BIM)</Link></li>
+            {courses.map((course) => (
+              <li key={course.slug}>
+                <Link href={`/kurslar/${course.slug}`}>
+                  <ChevronRight size={14} />
+                  {course.short_title}
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
 
-        {/* Kolon 3: Kurumsal */}
-        <nav className="footer-col" aria-label="Kurumsal">
+        {/* Kolon 3: Kategoriler — DB'den */}
+        <nav className="footer-col" aria-label="Kategoriler">
           <h4 className="footer-title">
             <Building2 size={16} className="footer-title-icon" />
-            Kurumsal
+            Kategoriler
           </h4>
           <ul className="footer-links">
-            <li><Link href="/hakkimizda"><ChevronRight size={14}/> Hakkımızda</Link></li>
-            <li><Link href="/egitmenler"><ChevronRight size={14}/> Eğitmenlerimiz</Link></li>
-            <li><Link href="/sss"><ChevronRight size={14}/> Sıkça Sorulan Sorular</Link></li>
-            <li><Link href="/iletisim"><ChevronRight size={14}/> İletişim</Link></li>
-            <li><Link href="/blog"><ChevronRight size={14}/> Blog</Link></li>
+            {categories.map((cat) => (
+              <li key={cat.slug}>
+                <Link href={`/kurslar?category=${encodeURIComponent(cat.name)}`}>
+                  <ChevronRight size={14} />
+                  {cat.name}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link href="/hakkimizda"><ChevronRight size={14} /> Hakkımızda</Link>
+            </li>
+            <li>
+              <Link href="/egitmenler"><ChevronRight size={14} /> Eğitmenlerimiz</Link>
+            </li>
+            <li>
+              <Link href="/iletisim"><ChevronRight size={14} /> İletişim</Link>
+            </li>
+            <li>
+              <Link href="/blog"><ChevronRight size={14} /> Blog</Link>
+            </li>
           </ul>
         </nav>
 
@@ -128,15 +159,15 @@ export default function Footer() {
           <address className="footer-contact" itemProp="address" itemScope itemType="https://schema.org/PostalAddress">
             <div className="contact-item">
               <Phone size={16} />
-              <a href="tel:+908501234567" itemProp="telephone">0 (850) 123 45 67</a>
+              <a href={`tel:${(settings?.phone ?? '0 (850) 123 45 67').replace(/\s/g, '')}`} itemProp="telephone">{settings?.phone ?? '0 (850) 123 45 67'}</a>
             </div>
             <div className="contact-item">
               <Mail size={16} />
-              <a href="mailto:info@dsakademi.com.tr" itemProp="email">info@dsakademi.com.tr</a>
+              <a href={`mailto:${settings?.email ?? 'info@dsakademi.com.tr'}`} itemProp="email">{settings?.email ?? 'info@dsakademi.com.tr'}</a>
             </div>
             <div className="contact-item">
               <MapPin size={16} />
-              <span itemProp="streetAddress">İTÜ Teknokent, Maslak / İstanbul</span>
+              <span itemProp="streetAddress">{settings?.address_line1 ?? 'İTÜ Teknokent, Maslak / İstanbul'}{settings?.address_line2 ? `, ${settings.address_line2}` : ''}</span>
             </div>
           </address>
 
@@ -144,19 +175,17 @@ export default function Footer() {
           <div className="footer-payment" style={{ marginTop: '2.5rem' }}>
             <h5 className="footer-hours-title">Güvenli Ödeme</h5>
             <div className="payment-logos-wrap" style={{ marginTop: '0.5rem' }}>
-              <Image 
-                src="/logo_band_white@1X.png" 
-                alt="Güvenli Ödeme" 
-                width={200} 
-                height={35} 
+              <Image
+                src="/logo_band_white@1X.png"
+                alt="Güvenli Ödeme"
+                width={200} height={35}
                 style={{ objectFit: 'contain' }}
                 className="payment-logo dark-only"
               />
-              <Image 
-                src="/logo_band_colored@1X.png" 
-                alt="Güvenli Ödeme" 
-                width={200} 
-                height={35} 
+              <Image
+                src="/logo_band_colored@1X.png"
+                alt="Güvenli Ödeme"
+                width={200} height={35}
                 style={{ objectFit: 'contain' }}
                 className="payment-logo light-only"
               />

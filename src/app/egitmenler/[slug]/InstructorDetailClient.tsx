@@ -13,40 +13,36 @@ import {
   Mail,
   Linkedin,
   Twitter,
-  Globe
+  Globe,
+  Clock,
 } from "lucide-react";
-import { type Instructor } from "@/data/instructors";
-import { courses } from "@/data/courses";
+import type { Course, Instructor } from "@/lib/types";
 import Breadcrumb from "@/components/Breadcrumb";
 
 interface Props {
   instructor: Instructor;
+  instructorCourses: Course[];
 }
 
-export default function InstructorDetailClient({ instructor }: Props) {
-  // Find courses taught by this instructor (fuzzy match)
-  const instructorCourses = courses.filter((c) =>
-    c.instructor.includes(instructor.name) || instructor.name.includes(c.instructor)
-  );
+export default function InstructorDetailClient({ instructor, instructorCourses }: Props) {
 
   return (
     <article className="instructor-profile-page">
-      <Breadcrumb 
+      <Breadcrumb
         items={[
-          { label: 'Eğitmenler', href: '/egitmenler' },
-          { label: instructor.name }
-        ]} 
+          { label: "Eğitmenler", href: "/egitmenler" },
+          { label: instructor.name },
+        ]}
       />
 
       <div className="container">
         <div className="instructor-profile-grid">
-          
           {/* Left Sidebar: Photo and Contact Info */}
           <aside className="instructor-profile-sidebar">
             <div className="instructor-profile-card">
               <div className="instructor-img-large-wrap">
                 <Image
-                  src={instructor.image}
+                  src={instructor.image ?? ""}
                   alt={instructor.name}
                   fill
                   className="instructor-img-large"
@@ -61,34 +57,32 @@ export default function InstructorDetailClient({ instructor }: Props) {
                 </span>
                 <h1 className="instructor-name">{instructor.name}</h1>
                 <p className="instructor-department">{instructor.department}</p>
-                
-                {instructor.socials && (
-                  <div className="instructor-socials">
-                    {instructor.socials.linkedin && (
-                      <a href={instructor.socials.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
-                        <Linkedin size={18} />
-                      </a>
-                    )}
-                    {instructor.socials.twitter && (
-                      <a href={instructor.socials.twitter} target="_blank" rel="noopener noreferrer" aria-label="Twitter">
-                        <Twitter size={18} />
-                      </a>
-                    )}
-                    {instructor.socials.website && (
-                      <a href={instructor.socials.website} target="_blank" rel="noopener noreferrer" aria-label="Website">
-                        <Globe size={18} />
-                      </a>
-                    )}
-                  </div>
-                )}
+
+                <div className="instructor-socials">
+                  {instructor.linkedin_url && (
+                    <a href={instructor.linkedin_url} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                      <Linkedin size={18} />
+                    </a>
+                  )}
+                  {instructor.twitter_url && (
+                    <a href={instructor.twitter_url} target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+                      <Twitter size={18} />
+                    </a>
+                  )}
+                  {instructor.website_url && (
+                    <a href={instructor.website_url} target="_blank" rel="noopener noreferrer" aria-label="Website">
+                      <Globe size={18} />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
-            
+
             <div className="instructor-contact-card">
               <h3>İletişime Geç</h3>
               <p>Kurumsal eğitim talepleri ve sorularınız için iletişime geçebilirsiniz.</p>
-              <Link href="/iletisim" className="primary-btn outline" style={{width: '100%', justifyContent: 'center', marginTop: '1rem'}}>
-                <Mail size={16}/>
+              <Link href="/iletisim" className="primary-btn outline" style={{ width: "100%", justifyContent: "center", marginTop: "1rem" }}>
+                <Mail size={16} />
                 Mesaj Gönder
               </Link>
             </div>
@@ -96,7 +90,6 @@ export default function InstructorDetailClient({ instructor }: Props) {
 
           {/* Right Content: Bio, Academic Details, Courses */}
           <div className="instructor-profile-content">
-            
             <section className="profile-section">
               <h2 className="profile-section-title">
                 <User size={22} className="text-accent" />
@@ -107,44 +100,48 @@ export default function InstructorDetailClient({ instructor }: Props) {
               </div>
             </section>
 
-            <section className="profile-section">
-              <h2 className="profile-section-title">
-                <GraduationCap size={22} className="text-accent" />
-                Eğitim Bilgileri
-              </h2>
-              <div className="academic-timeline">
-                {instructor.education.map((edu, idx) => (
-                  <div key={idx} className="timeline-item">
-                    <div className="timeline-dot"></div>
-                    <div className="timeline-content">
-                       <span className="timeline-year">{edu.year}</span>
-                       <h4 className="timeline-title">{edu.degree}</h4>
-                       <p className="timeline-desc">{edu.university}</p>
+            {instructor.education && instructor.education.length > 0 && (
+              <section className="profile-section">
+                <h2 className="profile-section-title">
+                  <GraduationCap size={22} className="text-accent" />
+                  Eğitim Bilgileri
+                </h2>
+                <div className="academic-timeline">
+                  {instructor.education.map((edu, idx) => (
+                    <div key={idx} className="timeline-item">
+                      <div className="timeline-dot"></div>
+                      <div className="timeline-content">
+                        <span className="timeline-year">{edu.year}</span>
+                        <h4 className="timeline-title">{edu.degree}</h4>
+                        <p className="timeline-desc">{edu.university}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+                  ))}
+                </div>
+              </section>
+            )}
 
-            <section className="profile-section">
-              <h2 className="profile-section-title">
-                <Briefcase size={22} className="text-accent" />
-                Deneyim
-              </h2>
-              <div className="academic-timeline">
-                {instructor.experience.map((exp, idx) => (
-                  <div key={idx} className="timeline-item">
-                    <div className="timeline-dot"></div>
-                    <div className="timeline-content">
-                       <span className="timeline-year">{exp.duration}</span>
-                       <h4 className="timeline-title">{exp.role}</h4>
-                       <p className="timeline-desc">{exp.institution}</p>
+            {instructor.experience && instructor.experience.length > 0 && (
+              <section className="profile-section">
+                <h2 className="profile-section-title">
+                  <Briefcase size={22} className="text-accent" />
+                  Deneyim
+                </h2>
+                <div className="academic-timeline">
+                  {instructor.experience.map((exp, idx) => (
+                    <div key={idx} className="timeline-item">
+                      <div className="timeline-dot"></div>
+                      <div className="timeline-content">
+                        <span className="timeline-year">{exp.duration}</span>
+                        <h4 className="timeline-title">{exp.role}</h4>
+                        <p className="timeline-desc">{exp.institution}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-            
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* Instructor's Courses */}
             {instructorCourses.length > 0 && (
               <section className="profile-section mt-5">
@@ -153,12 +150,8 @@ export default function InstructorDetailClient({ instructor }: Props) {
                   Verdiği Eğitimler
                 </h2>
                 <div className="instructor-courses-grid">
-                  {instructorCourses.map(course => (
-                    <Link
-                      href={`/kurslar/${course.slug}`}
-                      key={course.id}
-                      className="course-card"
-                    >
+                  {instructorCourses.map((course) => (
+                    <Link href={`/kurslar/${course.slug}`} key={course.id} className="course-card">
                       <div className="course-card-img-wrap">
                         <Image
                           src={course.image}
@@ -170,7 +163,7 @@ export default function InstructorDetailClient({ instructor }: Props) {
                         <div className="course-card-overlay" />
                         <div className="course-card-badges">
                           <span className="course-card-code">{course.code}</span>
-                          {course.isNew && <span className="course-card-new">YENİ</span>}
+                          {course.is_new && <span className="course-card-new">YENİ</span>}
                         </div>
                         <span className={`course-card-level level-${course.level.toLowerCase()}`}>
                           {course.level}
@@ -178,8 +171,8 @@ export default function InstructorDetailClient({ instructor }: Props) {
                       </div>
 
                       <div className="course-card-body">
-                        <span className="course-card-category">{course.category}</span>
-                        <h3 className="course-card-title">{course.shortTitle}</h3>
+                        <span className="course-card-category">{course.category?.name}</span>
+                        <h3 className="course-card-title">{course.short_title}</h3>
 
                         <div className="course-card-meta">
                           <span className="course-card-meta-item">
@@ -200,7 +193,6 @@ export default function InstructorDetailClient({ instructor }: Props) {
                 </div>
               </section>
             )}
-
           </div>
         </div>
       </div>

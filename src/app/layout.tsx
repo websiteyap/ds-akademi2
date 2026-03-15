@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
-import Navbar from "@/components/Navbar";
-import FilterBar from "@/components/FilterBar";
-import Footer from "@/components/Footer";
+import NavbarWrapper from "@/components/NavbarWrapper";
+import FilterBarWrapper from "@/components/FilterBarWrapper";
+import FooterWrapper from "@/components/FooterWrapper";
 import ScrollToTop from "@/components/ScrollToTop";
 import GlobalLoading from "@/components/GlobalLoading";
 import AuthSessionProvider from "@/components/AuthSessionProvider";
@@ -57,12 +57,12 @@ export default function RootLayout({
         <AuthSessionProvider>
           <GlobalLoading />
           <ThemeProvider>
-            <Navbar />
-            <FilterBar />
+            <NavbarWrapper />
+            <FilterBarWrapper />
             <main id="main-content">
               {children}
             </main>
-            <Footer />
+            <FooterWrapper />
             <ScrollToTop />
           </ThemeProvider>
           <Toaster />
