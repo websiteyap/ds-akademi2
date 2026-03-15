@@ -39,12 +39,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Fetch user from Supabase
         const { data: user, error } = await supabaseAdmin
           .from('users')
-          .select('id, name, email, password_hash, role, image')
+          .select('id, name, email, password_hash, role, image, is_blocked')
           .eq('email', email.toLowerCase().trim())
           .single();
 
         if (error || !user || !user.password_hash) {
           return null;
+        }
+
+        // Check if user is blocked
+        if (user.is_blocked) {
+          throw new Error('BLOCKED');
         }
 
         // Verify password

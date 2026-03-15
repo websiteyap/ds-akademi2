@@ -67,11 +67,12 @@ export default function HeroTrustSlider() {
           gap: 'inherit'             // Controlled by CSS
         }} className="hero-trust-animate-wrapper">
           <div className="hero-trust-label">
-            <span><strong>{slide.text}</strong> {slide.sub}</span>
+            <strong className="hero-trust-title">{slide.text}</strong>
+            <span className="hero-trust-subtitle">{slide.sub}</span>
           </div>
           <div className="stars">
             {[...Array(5)].map((_, i) => (
-              <Star key={i} size={14} fill="#FFB800" color="#FFB800" />
+              <Star key={i} size={13} fill="#FFB800" color="#FFB800" />
             ))}
           </div>
         </div>

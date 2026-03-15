@@ -106,29 +106,19 @@ const adminNav: NavSection[] = [
   {
     title: 'Kurslar',
     items: [
-      { href: '/dashboard/admin/kurslar',           label: 'Tüm Kurslar',       icon: BookOpen  },
-      { href: '/dashboard/admin/kurs-guncelleme',   label: 'Kurs Güncellemesi', icon: PenLine   },
+      { href: '/dashboard/admin/kurslar', label: 'Tüm Kurslar', icon: BookOpen },
     ],
   },
   {
     title: 'Kategoriler',
     items: [
-      { href: '/dashboard/admin/kategoriler',       label: 'Tüm Kategoriler',   icon: Tag        },
-      { href: '/dashboard/admin/kategori-olustur',  label: 'Kategori Oluştur',  icon: PlusCircle },
+      { href: '/dashboard/admin/kategoriler', label: 'Tüm Kategoriler', icon: Tag },
     ],
   },
   {
     title: 'Eğitmenler',
     items: [
-      { href: '/dashboard/admin/egitmenler',    label: 'Tüm Eğitmenler', icon: UserCheck  },
-      { href: '/dashboard/admin/egitmen-ekle',  label: 'Eğitmen Ekle',   icon: PlusCircle },
-    ],
-  },
-  {
-    title: 'Raporlar',
-    items: [
-      { href: '/dashboard/admin/satis-raporlari',    label: 'Satış Raporları',   icon: BarChart2 },
-      { href: '/dashboard/admin/kullanici-raporlari',label: 'Kullanıcı Raporları', icon: Users   },
+      { href: '/dashboard/admin/egitmenler', label: 'Tüm Eğitmenler', icon: UserCheck },
     ],
   },
   {
@@ -142,8 +132,6 @@ const adminNav: NavSection[] = [
     title: 'Sayfalar',
     items: [
       { href: '/dashboard/admin/politika-sayfalari', label: 'Politika Sayfaları', icon: FileStack },
-      { href: '/dashboard/admin/hakkimizda',         label: 'Hakkımızda',         icon: ScrollText },
-      { href: '/dashboard/admin/iletisim',           label: 'İletişim',           icon: FileText   },
     ],
   },
   {
@@ -196,7 +184,7 @@ function SidebarContent({
   return (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-color)]">
+      <div className="shrink-0 h-14 flex items-center justify-between px-5 border-b border-[var(--border-color)]">
         <Link href="/" className="flex items-center gap-2.5 group" onClick={onClose}>
           <Image
             src="/logo.png"
@@ -228,10 +216,10 @@ function SidebarContent({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
+      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5 sidebar-scrollbar">
         {sections.map((section) => (
           <div key={section.title}>
-            <p className="text-[10px] font-bold uppercase tracking-[2px] text-[var(--text-secondary)] px-3 mb-1.5">
+            <p className="text-[10px] font-bold uppercase tracking-[2px] text-[var(--accent-color)] px-3 mb-1.5">
               {section.title}
             </p>
             <ul className="space-y-0.5">

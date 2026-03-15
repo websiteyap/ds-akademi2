@@ -132,3 +132,28 @@ export interface AboutSection {
   icon?: string; // lucide icon name
   sort_order: number;
 }
+
+// ─────────────────────────────────────────────────────────────
+// Politika Sayfaları
+// ─────────────────────────────────────────────────────────────
+export interface PolicyPage {
+  id: string;
+  slug: string;
+  title: string;
+  content: string;
+  updated_at: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Dashboard Kullanıcı Yönetimi
+// ─────────────────────────────────────────────────────────────
+export interface DashboardUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'student' | 'instructor' | 'admin';
+  is_blocked: boolean;
+  can_write_blog: boolean;
+  created_at: string;
+  updated_at: string;
+}
