@@ -1,7 +1,10 @@
-import { auth } from '@/auth';
+import NextAuth from 'next-auth';
+import { authConfig } from './auth.config';
 import { NextResponse } from 'next/server';
 
-export default auth((req) => {
+const { auth } = NextAuth(authConfig);
+
+export const proxy = auth((req) => {
   const { nextUrl, auth: session } = req;
   const isLoggedIn = !!session?.user;
   const isDashboard = nextUrl.pathname.startsWith('/dashboard');

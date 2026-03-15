@@ -3,8 +3,10 @@ import Credentials from 'next-auth/providers/credentials';
 import { SupabaseAdapter } from '@auth/supabase-adapter';
 import bcrypt from 'bcryptjs';
 import { supabaseAdmin } from '@/lib/supabase';
+import { authConfig } from './auth.config';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  ...authConfig,
   adapter: SupabaseAdapter({
     url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
     secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -61,28 +63,4 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
-
-  callbacks: {
-    async jwt({ token, user }) {
-      // On sign-in, persist extra fields into token
-      if (user) {
-        token.id = user.id;
-        token.role = (user as { role?: string }).role ?? 'student';
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      // Expose token fields to session
-      if (token && session.user) {
-        session.user.id = token.id as string;
-        (session.user as { role?: string }).role = token.role as string;
-      }
-      return session;
-    },
-  },
-
-  pages: {
-    signIn: '/login',
-    error: '/login',
-  },
 });
