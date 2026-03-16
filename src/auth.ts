@@ -43,18 +43,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           .eq('email', email.toLowerCase().trim())
           .single();
 
-        if (error || !user || !user.password_hash) {
+        if (error) {
+          console.error('[auth] Database error during authorize:', error.message, error.details);
           return null;
         }
 
-        // Check if user is blocked
-        if (user.is_blocked) {
+        if (!user || !user.password_hash) {
+          console.warn('[auth] User not found or has no password hash:', email);
+          return null;
+        }
+
+        // Check if user is blocked (resilient check)
+        // If is_blocked is missing from DB, it will be undefined, treated as false
+        if (user.is_blocked === true) {
+          console.warn('[auth] Blocked user attempted login:', email);
           throw new Error('BLOCKED');
         }
 
         // Verify password
         const isValid = await bcrypt.compare(password, user.password_hash);
         if (!isValid) {
+          console.warn('[auth] Invalid password for user:', email);
           return null;
         }
 
