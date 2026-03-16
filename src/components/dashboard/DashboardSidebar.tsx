@@ -107,6 +107,7 @@ const adminNav: NavSection[] = [
     title: 'Kurslar',
     items: [
       { href: '/dashboard/admin/kurslar', label: 'Tüm Kurslar', icon: BookOpen },
+      { href: '/dashboard/egitmen/kurs-olustur', label: 'Yeni Kurs Oluştur', icon: PlusCircle },
     ],
   },
   {

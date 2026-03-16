@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import { supabaseAdmin } from '@/lib/supabase';
+import { db } from '@/lib/db';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import InactivityGuard from '@/components/dashboard/InactivityGuard';
 
@@ -26,12 +26,11 @@ export default async function DashboardLayout({
   // Fetch blog permission for instructors
   let canWriteBlog = false;
   if (user.role === 'instructor' && user.id) {
-    const { data } = await supabaseAdmin
-      .from('users')
-      .select('can_write_blog')
-      .eq('id', user.id)
-      .single();
-    canWriteBlog = data?.can_write_blog ?? false;
+    const { rows } = await db.query(
+      'SELECT can_write_blog FROM users WHERE id = $1 LIMIT 1',
+      [user.id]
+    );
+    canWriteBlog = rows[0]?.can_write_blog ?? false;
   }
 
   const panelLabel =

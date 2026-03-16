@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { supabaseAdmin } from '@/lib/supabase';
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -21,25 +22,18 @@ export async function POST(req: NextRequest) {
 
   // Generate unique filename
   const ext = file.name.split('.').pop() || 'jpg';
-  const filename = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const uniqueFilename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-  // Upload to Supabase Storage
-  const { error } = await supabaseAdmin.storage
-    .from('public-assets')
-    .upload(filename, buffer, {
-      contentType: file.type,
-      upsert: false,
-    });
+  // Ensure upload directory exists
+  const uploadDir = path.join(process.cwd(), 'public', 'uploads', folder);
+  await mkdir(uploadDir, { recursive: true });
 
-  if (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  // Write file to disk
+  const filePath = path.join(uploadDir, uniqueFilename);
+  await writeFile(filePath, buffer);
 
-  // Get public URL
-  const { data: urlData } = supabaseAdmin.storage
-    .from('public-assets')
-    .getPublicUrl(filename);
+  // Return relative URL (served by Next.js static files)
+  const publicUrl = `/uploads/${folder}/${uniqueFilename}`;
 
-  return NextResponse.json({ url: urlData.publicUrl }, { status: 201 });
+  return NextResponse.json({ url: publicUrl }, { status: 201 });
 }

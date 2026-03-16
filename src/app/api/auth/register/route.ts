@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { supabaseAdmin } from '@/lib/supabase';
+import { db } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,13 +25,12 @@ export async function POST(req: NextRequest) {
     const normalizedEmail = email.toLowerCase().trim();
 
     // Check if user already exists
-    const { data: existing } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('email', normalizedEmail)
-      .single();
+    const { rows: existing } = await db.query(
+      'SELECT id FROM users WHERE email = $1 LIMIT 1',
+      [normalizedEmail]
+    );
 
-    if (existing) {
+    if (existing.length > 0) {
       return NextResponse.json(
         { error: 'Bu e-posta adresi zaten kayıtlı.' },
         { status: 409 }
@@ -42,19 +41,13 @@ export async function POST(req: NextRequest) {
     const password_hash = await bcrypt.hash(password, 12);
 
     // Create user
-    const { data: newUser, error } = await supabaseAdmin
-      .from('users')
-      .insert({
-        name: name.trim(),
-        email: normalizedEmail,
-        password_hash,
-        role: 'student',
-      })
-      .select('id, name, email, role')
-      .single();
+    const { rows: newUser } = await db.query(
+      `INSERT INTO users (name, email, password_hash, role)
+       VALUES ($1, $2, $3, 'student') RETURNING id, name, email, role`,
+      [name.trim(), normalizedEmail, password_hash]
+    );
 
-    if (error || !newUser) {
-      console.error('User creation error:', error);
+    if (!newUser[0]) {
       return NextResponse.json(
         { error: 'Hesap oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.' },
         { status: 500 }
@@ -62,7 +55,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { message: 'Hesabınız başarıyla oluşturuldu.', userId: newUser.id },
+      { message: 'Hesabınız başarıyla oluşturuldu.', userId: newUser[0].id },
       { status: 201 }
     );
   } catch (err) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { supabaseAdmin } from '@/lib/supabase';
+import { db } from '@/lib/db';
 
 // ─── GET: Site ayarları ──────────────────────────────────────────
 export async function GET() {
@@ -10,15 +10,10 @@ export async function GET() {
   const user = session.user as { role?: string };
   if (user.role !== 'admin') return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 });
 
-  const { data, error } = await supabaseAdmin
-    .from('site_settings')
-    .select('*')
-    .limit(1)
-    .single();
+  const { rows } = await db.query('SELECT * FROM site_settings LIMIT 1');
+  if (rows.length === 0) return NextResponse.json({ error: 'Ayarlar bulunamadı.' }, { status: 404 });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  return NextResponse.json(data);
+  return NextResponse.json(rows[0]);
 }
 
 // ─── PUT: Site ayarları güncelle ─────────────────────────────────
@@ -34,12 +29,13 @@ export async function PUT(req: NextRequest) {
 
   if (!id) return NextResponse.json({ error: 'ID zorunludur.' }, { status: 400 });
 
-  const { error } = await supabaseAdmin
-    .from('site_settings')
-    .update(updates)
-    .eq('id', id);
+  const keys = Object.keys(updates);
+  if (keys.length === 0) return NextResponse.json({ message: 'Güncelleme yok.' });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const setClauses = keys.map((key, i) => `${key} = $${i + 2}`).join(', ');
+  const values = [id, ...keys.map((k) => updates[k])];
+
+  await db.query(`UPDATE site_settings SET ${setClauses} WHERE id = $1`, values);
 
   return NextResponse.json({ message: 'Site ayarları güncellendi.' });
 }

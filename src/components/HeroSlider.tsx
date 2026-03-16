@@ -118,8 +118,8 @@ export default function HeroSlider({ courses }: Props) {
               }}
             >
               <Image
-                src={course.image}
-                alt={course.title}
+                src={course.image || '/logo.png'}
+                alt={course.title || 'Course Image'}
                 fill
                 className="slide-image"
                 sizes="(max-width: 768px) 100vw, 45vw"

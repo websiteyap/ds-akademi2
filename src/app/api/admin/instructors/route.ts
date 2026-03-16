@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { supabaseAdmin } from '@/lib/supabase';
+import { db } from '@/lib/db';
 
 // ─── GET: Tüm eğitmenler ────────────────────────────────────────
 export async function GET() {
@@ -10,26 +10,21 @@ export async function GET() {
   const user = session.user as { role?: string };
   if (user.role !== 'admin') return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 });
 
-  const { data, error } = await supabaseAdmin
-    .from('instructors')
-    .select('*')
-    .order('sort_order');
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const { rows: data } = await db.query('SELECT * FROM instructors ORDER BY sort_order');
 
   // Kurs sayıları
-  const { data: ciRows } = await supabaseAdmin
-    .from('course_instructors')
-    .select('instructor_id');
+  const { rows: ciRows } = await db.query(
+    'SELECT instructor_id, COUNT(*)::int as count FROM course_instructors GROUP BY instructor_id'
+  );
 
   const ciMap: Record<string, number> = {};
-  (ciRows ?? []).forEach((r: { instructor_id: string }) => {
-    ciMap[r.instructor_id] = (ciMap[r.instructor_id] ?? 0) + 1;
+  ciRows.forEach((r: { instructor_id: string; count: number }) => {
+    ciMap[r.instructor_id] = r.count;
   });
 
-  const result = (data ?? []).map((ins) => ({
+  const result = data.map((ins: Record<string, unknown>) => ({
     ...ins,
-    courseCount: ciMap[ins.id] ?? 0,
+    courseCount: ciMap[ins.id as string] ?? 0,
   }));
 
   return NextResponse.json(result);
@@ -60,26 +55,13 @@ export async function POST(req: NextRequest) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 
-  const { data, error } = await supabaseAdmin
-    .from('instructors')
-    .insert({
-      name, slug, title,
-      department: department || '',
-      image: image || null,
-      bio: bio || '',
-      linkedin_url: linkedin_url || null,
-      twitter_url: twitter_url || null,
-      website_url: website_url || null,
-      specialty: specialty || null,
-      sort_order: sort_order ?? 0,
-      is_active: is_active ?? true,
-    })
-    .select('id, slug')
-    .single();
+  const { rows } = await db.query(
+    `INSERT INTO instructors (name, slug, title, department, image, bio, linkedin_url, twitter_url, website_url, specialty, sort_order, is_active)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id, slug`,
+    [name, slug, title, department || '', image || null, bio || '', linkedin_url || null, twitter_url || null, website_url || null, specialty || null, sort_order ?? 0, is_active ?? true]
+  );
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  return NextResponse.json({ id: data?.id, slug: data?.slug, message: 'Eğitmen oluşturuldu.' }, { status: 201 });
+  return NextResponse.json({ id: rows[0]?.id, slug: rows[0]?.slug, message: 'Eğitmen oluşturuldu.' }, { status: 201 });
 }
 
 // ─── PUT: Eğitmen güncelle ───────────────────────────────────────
@@ -95,12 +77,13 @@ export async function PUT(req: NextRequest) {
 
   if (!id) return NextResponse.json({ error: 'ID zorunludur.' }, { status: 400 });
 
-  const { error } = await supabaseAdmin
-    .from('instructors')
-    .update(updates)
-    .eq('id', id);
+  const keys = Object.keys(updates);
+  if (keys.length === 0) return NextResponse.json({ message: 'Güncelleme yok.' });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const setClauses = keys.map((key, i) => `${key} = $${i + 2}`).join(', ');
+  const values = [id, ...keys.map((k) => updates[k])];
+
+  await db.query(`UPDATE instructors SET ${setClauses} WHERE id = $1`, values);
 
   return NextResponse.json({ message: 'Eğitmen güncellendi.' });
 }
@@ -117,8 +100,7 @@ export async function DELETE(req: NextRequest) {
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'ID zorunludur.' }, { status: 400 });
 
-  const { error } = await supabaseAdmin.from('instructors').delete().eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await db.query('DELETE FROM instructors WHERE id = $1', [id]);
 
   return NextResponse.json({ message: 'Eğitmen silindi.' });
 }

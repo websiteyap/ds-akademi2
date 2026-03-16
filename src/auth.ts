@@ -1,23 +1,18 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { SupabaseAdapter } from '@auth/supabase-adapter';
 import bcrypt from 'bcryptjs';
-import { supabaseAdmin } from '@/lib/supabase';
+import { db } from '@/lib/db';
 import { authConfig } from './auth.config';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
-  adapter: SupabaseAdapter({
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  }),
 
-  // Use JWT strategy so sessions work with credentials provider
+  // No adapter needed — we handle user lookup manually via credentials
+  // JWT strategy means sessions are stored in cookies, not in DB
+
   session: {
     strategy: 'jwt',
-    // Max age 1 hour — inactivity handled client-side with signOut()
     maxAge: 3600,
-    // Don't auto-extend session on every request (inactivity = no extension)
     updateAge: 0,
   },
 
@@ -36,25 +31,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const email = credentials.email as string;
         const password = credentials.password as string;
 
-        // Fetch user from Supabase
-        const { data: user, error } = await supabaseAdmin
-          .from('users')
-          .select('id, name, email, password_hash, role, image, is_blocked')
-          .eq('email', email.toLowerCase().trim())
-          .single();
+        // Fetch user from PostgreSQL
+        const { rows } = await db.query(
+          'SELECT id, name, email, password_hash, role, image, is_blocked FROM users WHERE email = $1 LIMIT 1',
+          [email.toLowerCase().trim()]
+        );
 
-        if (error) {
-          console.error('[auth] Database error during authorize:', error.message, error.details);
-          return null;
-        }
+        const user = rows[0];
 
         if (!user || !user.password_hash) {
           console.warn('[auth] User not found or has no password hash:', email);
           return null;
         }
 
-        // Check if user is blocked (resilient check)
-        // If is_blocked is missing from DB, it will be undefined, treated as false
+        // Check if user is blocked
         if (user.is_blocked === true) {
           console.warn('[auth] Blocked user attempted login:', email);
           throw new Error('BLOCKED');

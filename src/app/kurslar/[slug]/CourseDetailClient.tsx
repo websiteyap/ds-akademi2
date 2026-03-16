@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -11,7 +11,6 @@ import {
   CheckCircle2,
   GraduationCap,
   Layers,
-  ArrowLeft,
   Calendar,
   Award,
   Target,
@@ -19,9 +18,106 @@ import {
   AlertCircle,
   Tag,
   Check,
+  Video,
+  FileText,
+  ClipboardList,
+  Eye,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
-import type { Course, CoursePackage } from "@/lib/types";
+import type { Course, CoursePackage, CourseSection } from "@/lib/types";
 
+// ─── İçerik tipi ikonu ───────────────────────────────────────
+const CONTENT_ICONS = {
+  video: { icon: Video, color: "text-blue-400", label: "Video" },
+  text: { icon: FileText, color: "text-green-400", label: "Metin" },
+  quiz: { icon: ClipboardList, color: "text-purple-400", label: "Sınav" },
+};
+
+// ─── Bölüm Accordion ─────────────────────────────────────────
+function SectionAccordion({ section, index }: { section: CourseSection; index: number }) {
+  const [open, setOpen] = useState(index === 0);
+  const totalDuration = section.lessons.reduce((sum, l) => sum + (l.duration_min ?? 0), 0);
+  const freeLessons = section.lessons.filter((l) => l.is_free).length;
+
+  return (
+    <div className="border border-[var(--border-color)] rounded-sm overflow-hidden">
+      {/* Bölüm Başlığı */}
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors text-left"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-xs font-bold text-[var(--accent-color)] shrink-0">
+            {String(index + 1).padStart(2, "0")}
+          </span>
+          <span className="text-sm font-semibold text-[var(--text-primary)] truncate">
+            {section.title}
+          </span>
+        </div>
+        <div className="flex items-center gap-3 shrink-0 ml-3">
+          <span className="text-xs text-[var(--text-secondary)] hidden sm:block">
+            {section.lessons.length} ders
+            {totalDuration > 0 && ` · ${totalDuration} dk`}
+          </span>
+          {open ? (
+            <ChevronUp size={16} className="text-[var(--text-secondary)]" />
+          ) : (
+            <ChevronDown size={16} className="text-[var(--text-secondary)]" />
+          )}
+        </div>
+      </button>
+
+      {/* Ders Listesi */}
+      {open && (
+        <div className="divide-y divide-[var(--border-color)]">
+          {section.lessons.length === 0 ? (
+            <p className="px-4 py-3 text-xs text-[var(--text-secondary)] italic">
+              Bu bölümde henüz ders yok.
+            </p>
+          ) : (
+            section.lessons.map((lesson) => {
+              const cfg = CONTENT_ICONS[lesson.content_type] ?? CONTENT_ICONS.video;
+              const Icon = cfg.icon;
+              return (
+                <div
+                  key={lesson.id}
+                  className="flex items-center gap-3 px-4 py-2.5 bg-[var(--bg-color)] hover:bg-[var(--bg-secondary)] transition-colors"
+                >
+                  <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 bg-[var(--bg-secondary)]`}>
+                    <Icon size={12} className={cfg.color} />
+                  </div>
+                  <span className="flex-1 text-sm text-[var(--text-primary)] min-w-0 truncate">
+                    {lesson.title}
+                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {lesson.is_free && (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-sm">
+                        <Eye size={10} />
+                        Ücretsiz
+                      </span>
+                    )}
+                    {lesson.duration_min && (
+                      <span className="text-xs text-[var(--text-secondary)]">
+                        {lesson.duration_min} dk
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+          {freeLessons > 0 && (
+            <div className="px-4 py-2 bg-green-500/5 text-xs text-green-400">
+              ✓ {freeLessons} ücretsiz ders mevcut — hemen izleyebilirsiniz
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface Props {
   course: Course;
@@ -102,14 +198,20 @@ export default function CourseDetailClient({ course, relatedCourses }: Props) {
 
             {/* Right: Image */}
             <div className="course-detail-hero-img-wrap">
-              <Image
-                src={course.image}
-                alt={course.title}
-                fill
-                className="course-detail-hero-img"
-                sizes="(max-width: 768px) 100vw, 50vw"
-                priority
-              />
+              {course.image ? (
+                <Image
+                  src={course.image}
+                  alt={course.title}
+                  fill
+                  className="course-detail-hero-img"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority
+                />
+              ) : (
+                <div className="w-full h-full bg-[var(--bg-tertiary)] flex items-center justify-center">
+                  <BookOpen size={48} className="text-[var(--border-color)]" />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -139,8 +241,45 @@ export default function CourseDetailClient({ course, relatedCourses }: Props) {
                 </section>
               )}
 
-              {/* Topics / Curriculum */}
-              {course.topics && course.topics.length > 0 && (
+              {/* LMS Müfredat Bölümleri (course_sections) */}
+              {course.sections && course.sections.length > 0 && (
+                <section className="course-detail-section">
+                  <h2 className="course-detail-section-title">
+                    <BookOpen size={20} />
+                    Kurs İçeriği
+                  </h2>
+                  {/* Özet istatistik */}
+                  <div className="flex items-center gap-4 mb-4 text-xs text-[var(--text-secondary)]">
+                    <span>
+                      <strong className="text-[var(--text-primary)]">{course.sections.length}</strong> bölüm
+                    </span>
+                    <span>·</span>
+                    <span>
+                      <strong className="text-[var(--text-primary)]">
+                        {course.sections.reduce((sum, s) => sum + s.lessons.length, 0)}
+                      </strong> ders
+                    </span>
+                    {course.sections.reduce((sum, s) => sum + s.lessons.reduce((ls, l) => ls + (l.duration_min ?? 0), 0), 0) > 0 && (
+                      <>
+                        <span>·</span>
+                        <span>
+                          <strong className="text-[var(--text-primary)]">
+                            {course.sections.reduce((sum, s) => sum + s.lessons.reduce((ls, l) => ls + (l.duration_min ?? 0), 0), 0)}
+                          </strong> dk toplam
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {course.sections.map((section, i) => (
+                      <SectionAccordion key={section.id} section={section} index={i} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Topics / Curriculum (eski format — sections yoksa göster) */}
+              {(!course.sections || course.sections.length === 0) && course.topics && course.topics.length > 0 && (
                 <section className="course-detail-section">
                   <h2 className="course-detail-section-title">
                     <BookOpen size={20} />
@@ -276,13 +415,19 @@ export default function CourseDetailClient({ course, relatedCourses }: Props) {
                     style={{ textDecoration: "none", display: "flex", marginBottom: "0.75rem" }}
                   >
                     <div className="course-detail-instructor-img-wrap">
-                      <Image
-                        src={ins.image}
-                        alt={ins.name}
-                        fill
-                        className="course-detail-instructor-img"
-                        sizes="64px"
-                      />
+                      {ins.image ? (
+                        <Image
+                          src={ins.image}
+                          alt={ins.name}
+                          fill
+                          className="course-detail-instructor-img"
+                          sizes="64px"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-[var(--bg-tertiary)] flex items-center justify-center">
+                          <User size={20} className="text-[var(--text-secondary)]" />
+                        </div>
+                      )}
                     </div>
                     <div className="course-detail-instructor-info">
                       <strong>{ins.name}</strong>
@@ -355,13 +500,15 @@ export default function CourseDetailClient({ course, relatedCourses }: Props) {
               {relatedCourses.map((c) => (
                 <Link href={`/kurslar/${c.slug}`} key={c.id} className="course-card">
                   <div className="course-card-img-wrap">
-                    <Image
-                      src={c.image}
-                      alt={c.title}
-                      fill
-                      className="course-card-img"
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                    />
+                    {c.image ? (
+                      <Image
+                        src={c.image}
+                        alt={c.title}
+                        fill
+                        className="course-card-img"
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                      />
+                    ) : null}
                     <div className="course-card-overlay" />
                     <div className="course-card-badges">
                       <span className="course-card-code">{c.code}</span>

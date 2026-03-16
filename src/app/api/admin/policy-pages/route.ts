@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { supabaseAdmin } from '@/lib/supabase';
+import { db } from '@/lib/db';
 
 // ─── GET: Tüm politika sayfaları ─────────────────────────────────
 export async function GET() {
@@ -10,14 +10,9 @@ export async function GET() {
   const user = session.user as { role?: string };
   if (user.role !== 'admin') return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 });
 
-  const { data, error } = await supabaseAdmin
-    .from('policy_pages')
-    .select('*')
-    .order('slug');
+  const { rows } = await db.query('SELECT * FROM policy_pages ORDER BY slug');
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  return NextResponse.json(data ?? []);
+  return NextResponse.json(rows);
 }
 
 // ─── PUT: Politika sayfası güncelle ──────────────────────────────
@@ -37,12 +32,13 @@ export async function PUT(req: NextRequest) {
   if (title !== undefined) updates.title = title;
   if (content !== undefined) updates.content = content;
 
-  const { error } = await supabaseAdmin
-    .from('policy_pages')
-    .update(updates)
-    .eq('id', id);
+  const keys = Object.keys(updates);
+  if (keys.length === 0) return NextResponse.json({ message: 'Güncelleme yok.' });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const setClauses = keys.map((key, i) => `${key} = $${i + 2}`).join(', ');
+  const values = [id, ...keys.map((k) => updates[k])];
+
+  await db.query(`UPDATE policy_pages SET ${setClauses} WHERE id = $1`, values);
 
   return NextResponse.json({ message: 'Sayfa güncellendi.' });
 }

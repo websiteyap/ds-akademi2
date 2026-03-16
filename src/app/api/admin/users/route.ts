@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { supabaseAdmin } from '@/lib/supabase';
+import { db } from '@/lib/db';
 
 // ─── GET: Tüm kullanıcılar ──────────────────────────────────────
 export async function GET() {
@@ -10,14 +10,11 @@ export async function GET() {
   const user = session.user as { role?: string };
   if (user.role !== 'admin') return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 });
 
-  const { data, error } = await supabaseAdmin
-    .from('users')
-    .select('id, name, email, role, is_blocked, can_write_blog, created_at, updated_at')
-    .order('created_at', { ascending: false });
+  const { rows } = await db.query(
+    'SELECT id, name, email, role, is_blocked, can_write_blog, created_at, updated_at FROM users ORDER BY created_at DESC'
+  );
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  return NextResponse.json(data ?? []);
+  return NextResponse.json(rows);
 }
 
 // ─── PUT: Kullanıcı güncelle (engelle/kaldır, rol değiştir) ─────
@@ -50,12 +47,13 @@ export async function PUT(req: NextRequest) {
   if (updates.can_write_blog !== undefined) allowedFields.can_write_blog = updates.can_write_blog;
   if (updates.name !== undefined) allowedFields.name = updates.name;
 
-  const { error } = await supabaseAdmin
-    .from('users')
-    .update(allowedFields)
-    .eq('id', id);
+  const keys = Object.keys(allowedFields);
+  if (keys.length === 0) return NextResponse.json({ message: 'Güncelleme yok.' });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const setClauses = keys.map((key, i) => `${key} = $${i + 2}`).join(', ');
+  const values = [id, ...keys.map((k) => allowedFields[k])];
+
+  await db.query(`UPDATE users SET ${setClauses} WHERE id = $1`, values);
 
   return NextResponse.json({ message: 'Kullanıcı güncellendi.' });
 }

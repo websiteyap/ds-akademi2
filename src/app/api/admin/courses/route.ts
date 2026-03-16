@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { supabaseAdmin } from '@/lib/supabase';
+import { db } from '@/lib/db';
 
 // ─── GET: Kurslar veya tek kurs detayı ───────────────────────────
 export async function GET(req: NextRequest) {
@@ -13,48 +13,75 @@ export async function GET(req: NextRequest) {
   // Tek kurs detayı (sub-collections dahil)
   if (id) {
     const [hlRes, topRes, preRes, pkgRes] = await Promise.all([
-      supabaseAdmin.from('course_highlights').select('text').eq('course_id', id).order('sort_order'),
-      supabaseAdmin.from('course_topics').select('text').eq('course_id', id).order('sort_order'),
-      supabaseAdmin.from('course_prerequisites').select('text').eq('course_id', id).order('sort_order'),
-      supabaseAdmin.from('course_packages').select('*').eq('course_id', id).order('sort_order'),
+      db.query('SELECT text FROM course_highlights WHERE course_id = $1 ORDER BY sort_order', [id]),
+      db.query('SELECT text FROM course_topics WHERE course_id = $1 ORDER BY sort_order', [id]),
+      db.query('SELECT text FROM course_prerequisites WHERE course_id = $1 ORDER BY sort_order', [id]),
+      db.query('SELECT * FROM course_packages WHERE course_id = $1 ORDER BY sort_order', [id]),
     ]);
     return NextResponse.json({
-      highlights: (hlRes.data ?? []).map((r: { text: string }) => r.text),
-      topics: (topRes.data ?? []).map((r: { text: string }) => r.text),
-      prerequisites: (preRes.data ?? []).map((r: { text: string }) => r.text),
-      packages: (pkgRes.data ?? []).map((p) => ({
-        id: (p as Record<string, unknown>).id,
-        name: (p as Record<string, unknown>).name,
-        price: (p as Record<string, unknown>).price,
-        currency: (p as Record<string, unknown>).currency ?? 'TRY',
-        description: (p as Record<string, unknown>).description ?? '',
-        features: (p as Record<string, unknown>).features ?? [],
-        is_featured: (p as Record<string, unknown>).is_featured ?? false,
-        sort_order: (p as Record<string, unknown>).sort_order ?? 0,
+      highlights: hlRes.rows.map((r: { text: string }) => r.text),
+      topics: topRes.rows.map((r: { text: string }) => r.text),
+      prerequisites: preRes.rows.map((r: { text: string }) => r.text),
+      packages: pkgRes.rows.map((p: Record<string, unknown>) => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        currency: p.currency ?? 'TRY',
+        description: p.description ?? '',
+        features: p.features ?? [],
+        is_featured: p.is_featured ?? false,
+        sort_order: p.sort_order ?? 0,
       })),
     });
   }
 
   // Tüm kurslar listesi
   const user = session.user as { role?: string };
-  const { data, error } = await supabaseAdmin
-    .from('courses')
-    .select(`
-      id, slug, code, title, short_title, image, level, duration, week_count,
-      description, is_new, is_active, sort_order, created_at, updated_at, category_id,
-      categories ( id, slug, name ),
-      course_instructors ( is_primary, instructors ( id, slug, name, title ) )
-    `)
-    .order('sort_order');
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  // Eğitmen: sadece kendi kurslarını filtrele (gelecekte)
   if (user.role !== 'admin' && user.role !== 'instructor') {
     return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 });
   }
 
-  return NextResponse.json(data ?? []);
+  const { rows: courses } = await db.query(
+    `SELECT c.id, c.slug, c.code, c.title, c.short_title, c.image, c.level, c.duration, c.week_count,
+            c.description, c.is_new, c.is_active, c.sort_order, c.created_at, c.updated_at, c.category_id,
+            cat.id as cat_id, cat.slug as cat_slug, cat.name as cat_name
+     FROM courses c
+     LEFT JOIN categories cat ON cat.id = c.category_id
+     ORDER BY c.sort_order`
+  );
+
+  // Get instructors for all courses
+  const courseIds = courses.map((c: Record<string, unknown>) => c.id);
+  let ciMap = new Map<string, Array<Record<string, unknown>>>();
+
+  if (courseIds.length > 0) {
+    const { rows: ciRows } = await db.query(
+      `SELECT ci.course_id, ci.is_primary, i.id, i.slug, i.name, i.title
+       FROM course_instructors ci
+       JOIN instructors i ON i.id = ci.instructor_id
+       WHERE ci.course_id = ANY($1)`,
+      [courseIds]
+    );
+    for (const row of ciRows) {
+      if (!ciMap.has(row.course_id)) ciMap.set(row.course_id, []);
+      ciMap.get(row.course_id)!.push(row);
+    }
+  }
+
+  const result = courses.map((c: Record<string, unknown>) => ({
+    id: c.id, slug: c.slug, code: c.code, title: c.title, short_title: c.short_title,
+    image: c.image, level: c.level, duration: c.duration, week_count: c.week_count,
+    description: c.description, is_new: c.is_new, is_active: c.is_active,
+    sort_order: c.sort_order, created_at: c.created_at, updated_at: c.updated_at,
+    category_id: c.category_id,
+    categories: c.cat_id ? { id: c.cat_id, slug: c.cat_slug, name: c.cat_name } : null,
+    course_instructors: (ciMap.get(c.id as string) ?? []).map((ci) => ({
+      is_primary: ci.is_primary,
+      instructors: { id: ci.id, slug: ci.slug, name: ci.name, title: ci.title },
+    })),
+  }));
+
+  return NextResponse.json(result);
 }
 
 // ─── POST: Yeni kurs (sub-collections dahil) ─────────────────────
@@ -71,21 +98,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Başlık, kod ve slug zorunludur.' }, { status: 400 });
   }
 
-  const { data, error } = await supabaseAdmin
-    .from('courses')
-    .insert({
-      title, short_title: short_title || title, code, slug,
-      category_id: category_id || null,
-      level: level || 'Temel', duration: duration || '4 Hafta',
-      week_count: week_count || 4, description: description || '',
-      image: image || null, is_new: is_new ?? false, is_active: is_active ?? true,
-      sort_order: sort_order ?? 0,
-    })
-    .select('id')
-    .single();
+  const { rows } = await db.query(
+    `INSERT INTO courses (title, short_title, code, slug, category_id, level, duration, week_count, description, image, is_new, is_active, sort_order)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
+    [title, short_title || title, code, slug, category_id || null, level || 'Temel', duration || '4 Hafta', week_count || 4, description || '', image || null, is_new ?? false, is_active ?? true, sort_order ?? 0]
+  );
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  const courseId = data?.id;
+  const courseId = rows[0]?.id;
   if (!courseId) return NextResponse.json({ error: 'Kurs oluşturulamadı.' }, { status: 500 });
 
   // Sub-collections
@@ -110,8 +129,12 @@ export async function PUT(req: NextRequest) {
   delete courseUpdates.categories;
   delete courseUpdates.course_instructors;
 
-  const { error } = await supabaseAdmin.from('courses').update(courseUpdates).eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const keys = Object.keys(courseUpdates);
+  if (keys.length > 0) {
+    const setClauses = keys.map((key, i) => `${key} = $${i + 2}`).join(', ');
+    const values = [id, ...keys.map((k) => courseUpdates[k])];
+    await db.query(`UPDATE courses SET ${setClauses} WHERE id = $1`, values);
+  }
 
   // Sub-collections
   await saveSubCollections(id, instructor_id, highlights, topics, prerequisites, packages);
@@ -132,15 +155,14 @@ export async function DELETE(req: NextRequest) {
 
   // Cascade delete sub-collections first
   await Promise.all([
-    supabaseAdmin.from('course_highlights').delete().eq('course_id', id),
-    supabaseAdmin.from('course_topics').delete().eq('course_id', id),
-    supabaseAdmin.from('course_prerequisites').delete().eq('course_id', id),
-    supabaseAdmin.from('course_packages').delete().eq('course_id', id),
-    supabaseAdmin.from('course_instructors').delete().eq('course_id', id),
+    db.query('DELETE FROM course_highlights WHERE course_id = $1', [id]),
+    db.query('DELETE FROM course_topics WHERE course_id = $1', [id]),
+    db.query('DELETE FROM course_prerequisites WHERE course_id = $1', [id]),
+    db.query('DELETE FROM course_packages WHERE course_id = $1', [id]),
+    db.query('DELETE FROM course_instructors WHERE course_id = $1', [id]),
   ]);
 
-  const { error } = await supabaseAdmin.from('courses').delete().eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await db.query('DELETE FROM courses WHERE id = $1', [id]);
 
   return NextResponse.json({ message: 'Kurs silindi.' });
 }
@@ -156,51 +178,59 @@ async function saveSubCollections(
 ) {
   // Eğitmen
   if (instructorId) {
-    await supabaseAdmin.from('course_instructors').delete().eq('course_id', courseId);
-    await supabaseAdmin.from('course_instructors').insert({ course_id: courseId, instructor_id: instructorId, is_primary: true });
+    await db.query('DELETE FROM course_instructors WHERE course_id = $1', [courseId]);
+    await db.query(
+      'INSERT INTO course_instructors (course_id, instructor_id, is_primary) VALUES ($1, $2, true)',
+      [courseId, instructorId]
+    );
   }
 
   // Highlights
   if (highlights !== undefined) {
-    await supabaseAdmin.from('course_highlights').delete().eq('course_id', courseId);
-    if (highlights.length > 0) {
-      await supabaseAdmin.from('course_highlights').insert(
-        highlights.filter(h => h.trim()).map((text, i) => ({ course_id: courseId, text, sort_order: i }))
+    await db.query('DELETE FROM course_highlights WHERE course_id = $1', [courseId]);
+    const filtered = highlights.filter(h => h.trim());
+    for (let i = 0; i < filtered.length; i++) {
+      await db.query(
+        'INSERT INTO course_highlights (course_id, text, sort_order) VALUES ($1, $2, $3)',
+        [courseId, filtered[i], i]
       );
     }
   }
 
   // Topics
   if (topics !== undefined) {
-    await supabaseAdmin.from('course_topics').delete().eq('course_id', courseId);
-    if (topics.length > 0) {
-      await supabaseAdmin.from('course_topics').insert(
-        topics.filter(t => t.trim()).map((text, i) => ({ course_id: courseId, text, sort_order: i }))
+    await db.query('DELETE FROM course_topics WHERE course_id = $1', [courseId]);
+    const filtered = topics.filter(t => t.trim());
+    for (let i = 0; i < filtered.length; i++) {
+      await db.query(
+        'INSERT INTO course_topics (course_id, text, sort_order) VALUES ($1, $2, $3)',
+        [courseId, filtered[i], i]
       );
     }
   }
 
   // Prerequisites
   if (prerequisites !== undefined) {
-    await supabaseAdmin.from('course_prerequisites').delete().eq('course_id', courseId);
-    if (prerequisites.length > 0) {
-      await supabaseAdmin.from('course_prerequisites').insert(
-        prerequisites.filter(p => p.trim()).map((text, i) => ({ course_id: courseId, text, sort_order: i }))
+    await db.query('DELETE FROM course_prerequisites WHERE course_id = $1', [courseId]);
+    const filtered = prerequisites.filter(p => p.trim());
+    for (let i = 0; i < filtered.length; i++) {
+      await db.query(
+        'INSERT INTO course_prerequisites (course_id, text, sort_order) VALUES ($1, $2, $3)',
+        [courseId, filtered[i], i]
       );
     }
   }
 
   // Packages
   if (packages !== undefined) {
-    await supabaseAdmin.from('course_packages').delete().eq('course_id', courseId);
-    if (packages.length > 0) {
-      await supabaseAdmin.from('course_packages').insert(
-        packages.filter(p => p.name.trim()).map((p, i) => ({
-          course_id: courseId,
-          name: p.name, price: p.price, currency: p.currency || 'TRY',
-          description: p.description || '', features: p.features ?? [],
-          is_featured: p.is_featured ?? false, sort_order: p.sort_order ?? i,
-        }))
+    await db.query('DELETE FROM course_packages WHERE course_id = $1', [courseId]);
+    const filtered = packages.filter(p => p.name.trim());
+    for (let i = 0; i < filtered.length; i++) {
+      const p = filtered[i];
+      await db.query(
+        `INSERT INTO course_packages (course_id, name, price, currency, description, features, is_featured, sort_order)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [courseId, p.name, p.price, p.currency || 'TRY', p.description || '', JSON.stringify(p.features ?? []), p.is_featured ?? false, p.sort_order ?? i]
       );
     }
   }

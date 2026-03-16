@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Pencil, Trash2, Save, X, Search, Loader2, Check, AlertTriangle, ChevronUp, ChevronDown, Upload, Image as ImageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Save, X, Search, Loader2, Check, AlertTriangle, ChevronUp, ChevronDown, Upload, Image as ImageIcon, LayoutList } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 /* ─── Types ─── */
 interface CategoryOption { id: string; name: string; slug: string; }
@@ -255,7 +256,10 @@ export default function AdminCoursesPage() {
                 <td className="px-3 py-2"><span className={`inline-block px-2 py-0.5 text-xs font-bold rounded-sm ${c.is_active ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}>{c.is_active ? "Aktif" : "Pasif"}</span></td>
                 <td className="px-3 py-2 text-right">
                   <div className="flex items-center justify-end gap-1">
-                    <button onClick={() => openEdit(c)} className="p-1.5 rounded-sm text-[var(--accent-color)] hover:bg-[var(--accent-color)]/10 transition-colors" title="Düzenle"><Pencil size={14} /></button>
+                    <Link href={`/dashboard/admin/kurslar/${c.id}`} className="p-1.5 rounded-sm text-purple-400 hover:bg-purple-500/10 transition-colors" title="Müfredat Düzenle (Course Builder)">
+                      <LayoutList size={14} />
+                    </Link>
+                    <button onClick={() => openEdit(c)} className="p-1.5 rounded-sm text-[var(--accent-color)] hover:bg-[var(--accent-color)]/10 transition-colors" title="Hızlı Düzenle"><Pencil size={14} /></button>
                     <button onClick={() => deleteCourse(c.id)} className="p-1.5 rounded-sm text-red-500 hover:bg-red-500/10 transition-colors" title="Sil"><Trash2 size={14} /></button>
                   </div>
                 </td>

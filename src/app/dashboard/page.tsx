@@ -8,7 +8,7 @@ import {
   ScrollText,
 } from 'lucide-react';
 import Link from 'next/link';
-import { supabaseAdmin } from '@/lib/supabase';
+import { db } from '@/lib/db';
 import { blogs as staticBlogs } from '@/data/blogs';
 
 export default async function DashboardPage() {
@@ -23,22 +23,22 @@ export default async function DashboardPage() {
   let adminStats = null;
   if (isAdmin) {
     const [
-      { count: courseCount },
-      { count: instructorCount },
-      { count: userCount },
-      { count: categoryCount },
+      { rows: courseRes },
+      { rows: instructorRes },
+      { rows: userRes },
+      { rows: categoryRes },
     ] = await Promise.all([
-      supabaseAdmin.from('courses').select('*', { count: 'exact', head: true }),
-      supabaseAdmin.from('instructors').select('*', { count: 'exact', head: true }),
-      supabaseAdmin.from('users').select('*', { count: 'exact', head: true }),
-      supabaseAdmin.from('categories').select('*', { count: 'exact', head: true }),
+      db.query("SELECT COUNT(*)::int as count FROM courses"),
+      db.query("SELECT COUNT(*)::int as count FROM instructors"),
+      db.query("SELECT COUNT(*)::int as count FROM users"),
+      db.query("SELECT COUNT(*)::int as count FROM categories"),
     ]);
 
     adminStats = [
-      { label: 'Kurs', value: courseCount || 0, icon: GraduationCap },
-      { label: 'Eğitmen', value: instructorCount || 0, icon: Users },
-      { label: 'Kullanıcı', value: userCount || 0, icon: Users },
-      { label: 'Kategori', value: categoryCount || 0, icon: Tag },
+      { label: 'Kurs', value: courseRes[0]?.count || 0, icon: GraduationCap },
+      { label: 'Eğitmen', value: instructorRes[0]?.count || 0, icon: Users },
+      { label: 'Kullanıcı', value: userRes[0]?.count || 0, icon: Users },
+      { label: 'Kategori', value: categoryRes[0]?.count || 0, icon: Tag },
       { label: 'Blog', value: staticBlogs.length, icon: ScrollText },
     ];
   }

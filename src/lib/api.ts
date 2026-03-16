@@ -1,55 +1,71 @@
-import { supabaseAdmin } from '@/lib/supabase';
-import type { Category, Course, Instructor, SiteSettings, FaqCategory, Faq, AboutSection } from '@/lib/types';
+import { db } from '@/lib/db';
+import type { Category, Course, CourseSection, CourseLesson, Instructor, SiteSettings, FaqCategory, Faq, AboutSection } from '@/lib/types';
+
+// Helper for type casting database rows
+function asCategory(row: Record<string, unknown>): Category {
+  return {
+    id: row.id as string,
+    slug: row.slug as string,
+    name: row.name as string,
+    description: (row.description as string) || '',
+    icon: (row.icon as string) || 'BookOpen',
+    color: (row.color as string) || '#3b82f6',
+    bg_gradient: (row.bg_gradient as string) || '',
+    sort_order: row.sort_order as number,
+  };
+}
+
+function asInstructor(row: Record<string, unknown>): Instructor {
+  return {
+    id: row.id as string,
+    slug: row.slug as string,
+    name: row.name as string,
+    title: row.title as string,
+    department: (row.department as string) || '',
+    image: (row.image as string) || '',
+    bio: (row.bio as string) || '',
+    linkedin_url: (row.linkedin_url as string) || '',
+    twitter_url: (row.twitter_url as string) || '',
+    website_url: (row.website_url as string) || '',
+    specialty: (row.specialty as string) || '',
+    sort_order: (row.sort_order as number) || 0,
+  };
+}
 
 // ─────────────────────────────────────────────────────────────
 // CATEGORIES
 // ─────────────────────────────────────────────────────────────
 
 export async function getAllCategories(): Promise<Category[]> {
-  const { data, error } = await supabaseAdmin
-    .from('categories')
-    .select('*')
-    .order('sort_order');
+  const { rows: categories } = await db.query('SELECT * FROM categories ORDER BY sort_order');
 
-  if (error) {
-    console.error('getAllCategories error:', error);
-    return [];
-  }
-
-  // Compute courseCount per category
-  const { data: counts } = await supabaseAdmin
-    .from('courses')
-    .select('category_id')
-    .eq('is_active', true);
+  const { rows: counts } = await db.query(
+    "SELECT category_id, COUNT(*)::int as count FROM courses WHERE is_active = true GROUP BY category_id"
+  );
 
   const countMap: Record<string, number> = {};
-  (counts ?? []).forEach((c: { category_id: string | null }) => {
-    if (c.category_id) countMap[c.category_id] = (countMap[c.category_id] ?? 0) + 1;
+  counts.forEach((c: { category_id: string; count: number }) => {
+    if (c.category_id) countMap[c.category_id] = c.count;
   });
 
-  return (data ?? []).map((cat) => ({
-    ...cat,
-    courseCount: countMap[cat.id] ?? 0,
+  return categories.map((cat: Record<string, unknown>) => ({
+    ...asCategory(cat),
+    courseCount: countMap[cat.id as string] ?? 0,
   }));
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
-  const { data, error } = await supabaseAdmin
-    .from('categories')
-    .select('*')
-    .eq('slug', slug)
-    .single();
+  const { rows } = await db.query('SELECT * FROM categories WHERE slug = $1 LIMIT 1', [slug]);
+  if (rows.length === 0) return null;
 
-  if (error || !data) return null;
+  const cat = rows[0];
 
-  // Compute courseCount
-  const { count } = await supabaseAdmin
-    .from('courses')
-    .select('*', { count: 'exact', head: true })
-    .eq('category_id', data.id)
-    .eq('is_active', true);
+  const { rows: countRows } = await db.query(
+    "SELECT COUNT(*)::int as count FROM courses WHERE category_id = $1 AND is_active = true",
+    [cat.id]
+  );
 
-  return { ...data, courseCount: count ?? 0 };
+  return { ...asCategory(cat), courseCount: countRows[0]?.count ?? 0 };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -57,87 +73,74 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
 // ─────────────────────────────────────────────────────────────
 
 export async function getAllInstructors(): Promise<Instructor[]> {
-  const { data, error } = await supabaseAdmin
-    .from('instructors')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order');
+  const { rows: instructors } = await db.query(
+    'SELECT * FROM instructors WHERE is_active = true ORDER BY sort_order'
+  );
 
-  if (error) {
-    console.error('getAllInstructors error:', error);
-    return [];
-  }
-
-  // Compute courseCount per instructor
-  const { data: ciRows } = await supabaseAdmin
-    .from('course_instructors')
-    .select('instructor_id');
+  const { rows: ciRows } = await db.query(
+    'SELECT instructor_id, COUNT(*)::int as count FROM course_instructors GROUP BY instructor_id'
+  );
 
   const ciMap: Record<string, number> = {};
-  (ciRows ?? []).forEach((r: { instructor_id: string }) => {
-    ciMap[r.instructor_id] = (ciMap[r.instructor_id] ?? 0) + 1;
+  ciRows.forEach((r: { instructor_id: string; count: number }) => {
+    ciMap[r.instructor_id] = r.count;
   });
 
-  return (data ?? []).map((ins) => ({
-    ...ins,
-    courseCount: ciMap[ins.id] ?? 0,
+  return instructors.map((ins: Record<string, unknown>) => ({
+    ...asInstructor(ins),
+    courseCount: ciMap[ins.id as string] ?? 0,
   }));
 }
 
 export async function getInstructorBySlug(slug: string): Promise<Instructor | null> {
-  const { data, error } = await supabaseAdmin
-    .from('instructors')
-    .select(`
-      *,
-      instructor_education ( id, degree, university, year, sort_order ),
-      instructor_experience ( id, role, institution, duration, sort_order )
-    `)
-    .eq('slug', slug)
-    .single();
+  const { rows } = await db.query('SELECT * FROM instructors WHERE slug = $1 LIMIT 1', [slug]);
+  if (rows.length === 0) return null;
 
-  if (error || !data) return null;
+  const instructor = rows[0];
 
-  const education = [...(data.instructor_education ?? [])].sort(
-    (a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order
-  );
-  const experience = [...(data.instructor_experience ?? [])].sort(
-    (a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order
+  const { rows: education } = await db.query(
+    'SELECT id, degree, university, year, sort_order FROM instructor_education WHERE instructor_id = $1 ORDER BY sort_order',
+    [instructor.id]
   );
 
-  return { ...data, education, experience };
+  const { rows: experience } = await db.query(
+    'SELECT id, role, institution, duration, sort_order FROM instructor_experience WHERE instructor_id = $1 ORDER BY sort_order',
+    [instructor.id]
+  );
+
+  return { ...asInstructor(instructor), education, experience };
 }
 
 // ─────────────────────────────────────────────────────────────
-// Instructor's courses (used in instructor detail page)
+// Instructor's courses
 // ─────────────────────────────────────────────────────────────
 
 export async function getCoursesByInstructor(instructorId: string): Promise<Course[]> {
-  const { data, error } = await supabaseAdmin
-    .from('course_instructors')
-    .select(`
-      courses (
-        id, slug, code, title, short_title, image, level, duration, week_count, is_new, sort_order,
-        categories ( id, slug, name )
-      )
-    `)
-    .eq('instructor_id', instructorId);
+  const { rows } = await db.query(
+    `SELECT c.id, c.slug, c.code, c.title, c.short_title, c.image, c.level, c.duration, c.week_count, c.is_new, c.sort_order, c.description,
+            cat.id as cat_id, cat.slug as cat_slug, cat.name as cat_name
+     FROM course_instructors ci
+     JOIN courses c ON c.id = ci.course_id
+     LEFT JOIN categories cat ON cat.id = c.category_id
+     WHERE ci.instructor_id = $1`,
+    [instructorId]
+  );
 
-  if (error) {
-    console.error('getCoursesByInstructor error:', error);
-    return [];
-  }
-
-  return (data ?? [])
-    .map((row: { courses: unknown }) => {
-      const c = row.courses as Record<string, unknown> | null;
-      if (!c) return null;
-      const cat = c.categories as Record<string, unknown> | null;
-      return {
-        ...c,
-        category: cat ? { id: cat.id, slug: cat.slug, name: cat.name } : undefined,
-      } as Course;
-    })
-    .filter(Boolean) as Course[];
+  return rows.map((row: Record<string, unknown>) => ({
+    id: row.id as string,
+    slug: row.slug as string,
+    code: row.code as string,
+    title: row.title as string,
+    short_title: row.short_title as string,
+    image: (row.image as string) || '',
+    level: row.level as 'Temel' | 'Orta' | 'İleri',
+    duration: row.duration as string,
+    week_count: row.week_count as number,
+    description: (row.description as string) || '',
+    is_new: row.is_new as boolean,
+    sort_order: row.sort_order as number,
+    category: row.cat_id ? { id: row.cat_id as string, slug: row.cat_slug as string, name: row.cat_name as string } : undefined,
+  }));
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -145,93 +148,149 @@ export async function getCoursesByInstructor(instructorId: string): Promise<Cour
 // ─────────────────────────────────────────────────────────────
 
 export async function getAllCourses(): Promise<Course[]> {
-  const { data, error } = await supabaseAdmin
-    .from('courses')
-    .select(`
-      id, slug, code, title, short_title, image, level, duration, week_count, is_new, sort_order, description,
-      categories ( id, slug, name ),
-      course_instructors!inner (
-        is_primary,
-        instructors ( id, slug, name, title, image )
-      )
-    `)
-    .eq('is_active', true)
-    .order('sort_order');
+  const { rows: courses } = await db.query(
+    `SELECT c.id, c.slug, c.code, c.title, c.short_title, c.image, c.level, c.duration, c.week_count, c.is_new, c.sort_order, c.description,
+            cat.id as cat_id, cat.slug as cat_slug, cat.name as cat_name
+     FROM courses c
+     LEFT JOIN categories cat ON cat.id = c.category_id
+     WHERE c.is_active = true
+     ORDER BY c.sort_order`
+  );
 
-  if (error) {
-    console.error('getAllCourses error:', error);
-    return [];
+  const courseIds = courses.map((c: Record<string, unknown>) => c.id);
+  if (courseIds.length === 0) return [];
+
+  const { rows: ciRows } = await db.query(
+    `SELECT ci.course_id, ci.is_primary, i.id, i.slug, i.name, i.title, i.image
+     FROM course_instructors ci
+     JOIN instructors i ON i.id = ci.instructor_id
+     WHERE ci.course_id = ANY($1)`,
+    [courseIds]
+  );
+
+  const ciMap = new Map<string, Array<{ is_primary: boolean; id: string; slug: string; name: string; title: string; image: string }>>();
+  for (const row of ciRows) {
+    if (!ciMap.has(row.course_id)) ciMap.set(row.course_id, []);
+    ciMap.get(row.course_id)!.push(row);
   }
 
-  return (data ?? []).map((row: Record<string, unknown>) => {
-    const cat = row.categories as Record<string, unknown> | null;
-    const ciRows = (row.course_instructors as Array<{ is_primary: boolean; instructors: Record<string, unknown> }>) ?? [];
-    const primary = ciRows.find((r) => r.is_primary)?.instructors ?? ciRows[0]?.instructors;
+  return courses.map((row: Record<string, unknown>) => {
+    const instructors = ciMap.get(row.id as string) ?? [];
+    const primary = instructors.find((r) => r.is_primary) ?? instructors[0];
 
     return {
-      id: row.id,
-      slug: row.slug,
-      code: row.code,
-      title: row.title,
-      short_title: row.short_title,
-      image: row.image,
-      level: row.level,
-      duration: row.duration,
-      week_count: row.week_count,
-      is_new: row.is_new,
-      sort_order: row.sort_order,
-      description: row.description,
-      category: cat ? { id: cat.id as string, slug: cat.slug as string, name: cat.name as string } : undefined,
+      id: row.id as string,
+      slug: row.slug as string,
+      code: row.code as string,
+      title: row.title as string,
+      short_title: row.short_title as string,
+      image: (row.image as string) || '',
+      level: row.level as 'Temel' | 'Orta' | 'İleri',
+      duration: row.duration as string,
+      week_count: row.week_count as number,
+      description: (row.description as string) || '',
+      is_new: row.is_new as boolean,
+      sort_order: row.sort_order as number,
+      category: row.cat_id ? { id: row.cat_id as string, slug: row.cat_slug as string, name: row.cat_name as string, description: '', icon: '', color: '', bg_gradient: '', sort_order: 0 } : undefined,
       primary_instructor: primary ? {
-        id: primary.id as string,
-        slug: primary.slug as string,
-        name: primary.name as string,
-        title: primary.title as string,
-        image: primary.image as string,
+        id: primary.id,
+        slug: primary.slug,
+        name: primary.name,
+        title: primary.title,
+        image: primary.image || '',
       } : undefined,
-    } as Course;
+    };
   });
 }
 
 export async function getCourseBySlug(slug: string): Promise<Course | null> {
-  const { data, error } = await supabaseAdmin
-    .from('courses')
-    .select(`
-      *,
-      categories ( id, slug, name ),
-      course_instructors (
-        is_primary,
-        instructors ( id, slug, name, title, image )
-      ),
-      course_highlights ( text, sort_order ),
-      course_topics ( text, sort_order ),
-      course_prerequisites ( text, sort_order ),
-      course_packages ( id, name, price, currency, description, features, is_featured, sort_order )
-    `)
-    .eq('slug', slug)
-    .single();
+  const { rows } = await db.query(
+    `SELECT c.*, cat.id as cat_id, cat.slug as cat_slug, cat.name as cat_name
+     FROM courses c
+     LEFT JOIN categories cat ON cat.id = c.category_id
+     WHERE c.slug = $1 LIMIT 1`,
+    [slug]
+  );
 
-  if (error || !data) return null;
+  if (rows.length === 0) return null;
+  const d = rows[0];
+  const courseId = d.id;
 
-  const d = data as Record<string, unknown>;
-  const cat = d.categories as Record<string, unknown> | null;
-  const ciRows = (d.course_instructors as Array<{ is_primary: boolean; instructors: Record<string, unknown> }>) ?? [];
-  const allInstructors = ciRows.map((r) => ({
-    id: r.instructors.id as string,
-    slug: r.instructors.slug as string,
-    name: r.instructors.name as string,
-    title: r.instructors.title as string,
-    image: r.instructors.image as string,
+  const { rows: ciRows } = await db.query(
+    `SELECT ci.is_primary, i.id, i.slug, i.name, i.title, i.image
+     FROM course_instructors ci
+     JOIN instructors i ON i.id = ci.instructor_id
+     WHERE ci.course_id = $1`,
+    [courseId]
+  );
+
+  const allInstructors = ciRows.map((r: Record<string, unknown>) => ({
+    id: r.id as string,
+    slug: r.slug as string,
+    name: r.name as string,
+    title: r.title as string,
+    image: (r.image as string) || '',
   }));
-  const primary = ciRows.find((r) => r.is_primary)?.instructors ?? ciRows[0]?.instructors;
+  const primaryRow = ciRows.find((r: Record<string, unknown>) => r.is_primary) ?? ciRows[0];
 
-  const sortByOrder = <T extends { sort_order: number }>(arr: T[]) =>
-    [...arr].sort((a, b) => a.sort_order - b.sort_order);
+  const [hlRes, topRes, preRes, pkgRes] = await Promise.all([
+    db.query('SELECT text, sort_order FROM course_highlights WHERE course_id = $1 ORDER BY sort_order', [courseId]),
+    db.query('SELECT text, sort_order FROM course_topics WHERE course_id = $1 ORDER BY sort_order', [courseId]),
+    db.query('SELECT text, sort_order FROM course_prerequisites WHERE course_id = $1 ORDER BY sort_order', [courseId]),
+    db.query('SELECT * FROM course_packages WHERE course_id = $1 ORDER BY sort_order', [courseId]),
+  ]);
 
-  const highlights = sortByOrder((d.course_highlights as Array<{ text: string; sort_order: number }>) ?? []).map((h) => h.text);
-  const topics = sortByOrder((d.course_topics as Array<{ text: string; sort_order: number }>) ?? []).map((t) => t.text);
-  const prerequisites = sortByOrder((d.course_prerequisites as Array<{ text: string; sort_order: number }>) ?? []).map((p) => p.text);
-  const packages = sortByOrder((d.course_packages as Array<{ sort_order: number }>) ?? []);
+  const highlights = hlRes.rows.map((h: { text: string }) => h.text);
+  const topics = topRes.rows.map((t: { text: string }) => t.text);
+  const prerequisites = preRes.rows.map((p: { text: string }) => p.text);
+  const packages = pkgRes.rows.map((p: any) => ({
+    id: p.id,
+    name: p.name,
+    price: p.price,
+    currency: p.currency,
+    description: p.description,
+    features: typeof p.features === 'string' ? JSON.parse(p.features) : p.features,
+    is_featured: p.is_featured,
+    sort_order: p.sort_order,
+  }));
+
+  // LMS Müfredat
+  let sections: CourseSection[] = [];
+  const { rows: sectionsData } = await db.query(
+    'SELECT id, title, description, sort_order FROM course_sections WHERE course_id = $1 ORDER BY sort_order',
+    [courseId]
+  );
+
+  if (sectionsData.length > 0) {
+    const sectionIds = sectionsData.map((s: { id: string }) => s.id);
+
+    const { rows: lessonsData } = await db.query(
+      `SELECT id, section_id, title, content_type, duration_min, is_free, sort_order
+       FROM course_lessons WHERE section_id = ANY($1) ORDER BY sort_order`,
+      [sectionIds]
+    );
+
+    const lessonMap = new Map<string, CourseLesson[]>();
+    for (const lesson of lessonsData) {
+      if (!lessonMap.has(lesson.section_id)) lessonMap.set(lesson.section_id, []);
+      lessonMap.get(lesson.section_id)!.push({
+        id: lesson.id as string,
+        title: lesson.title as string,
+        content_type: lesson.content_type as 'video' | 'text' | 'quiz',
+        duration_min: lesson.duration_min as number | null,
+        is_free: lesson.is_free as boolean,
+        sort_order: lesson.sort_order as number,
+      });
+    }
+
+    sections = sectionsData.map((s: { id: string; title: string; description?: string; sort_order: number }) => ({
+      id: s.id as string,
+      title: s.title as string,
+      description: s.description as string,
+      sort_order: s.sort_order as number,
+      lessons: lessonMap.get(s.id) ?? [],
+    }));
+  }
 
   return {
     id: d.id as string,
@@ -239,97 +298,109 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
     code: d.code as string,
     title: d.title as string,
     short_title: d.short_title as string,
-    image: d.image as string,
+    image: (d.image as string) || '',
     level: d.level as 'Temel' | 'Orta' | 'İleri',
     duration: d.duration as string,
     week_count: d.week_count as number,
-    description: d.description as string,
+    description: (d.description as string) || '',
     is_new: d.is_new as boolean,
     sort_order: d.sort_order as number,
-    category: cat ? { id: cat.id as string, slug: cat.slug as string, name: cat.name as string } : undefined,
-    primary_instructor: primary ? {
-      id: primary.id as string,
-      slug: primary.slug as string,
-      name: primary.name as string,
-      title: primary.title as string,
-      image: primary.image as string,
+    category: d.cat_id ? { id: d.cat_id as string, slug: d.cat_slug as string, name: d.cat_name as string } : undefined,
+    primary_instructor: primaryRow ? {
+      id: primaryRow.id as string,
+      slug: primaryRow.slug as string,
+      name: primaryRow.name as string,
+      title: primaryRow.title as string,
+      image: (primaryRow.image as string) || '',
     } : undefined,
     all_instructors: allInstructors,
     highlights,
     topics,
     prerequisites,
-    packages: packages as import('./types').CoursePackage[],
+    packages,
+    sections,
   };
 }
 
 // ─────────────────────────────────────────────────────────────
-// Related courses (same category, excluding given slug)
+// Related courses
 // ─────────────────────────────────────────────────────────────
 
 export async function getRelatedCourses(categoryId: string, excludeSlug: string, limit = 3): Promise<Course[]> {
-  const { data: sameCat } = await supabaseAdmin
-    .from('courses')
-    .select(`
-      id, slug, code, title, short_title, image, level, duration, week_count, is_new,
-      categories ( id, slug, name ),
-      course_instructors ( is_primary, instructors ( id, slug, name, title, image ) )
-    `)
-    .eq('category_id', categoryId)
-    .eq('is_active', true)
-    .neq('slug', excludeSlug)
-    .order('sort_order')
-    .limit(limit);
+  const { rows: sameCat } = await db.query(
+    `SELECT c.id, c.slug, c.code, c.title, c.short_title, c.image, c.level, c.duration, c.week_count, c.is_new, c.sort_order, c.description,
+            cat.id as cat_id, cat.slug as cat_slug, cat.name as cat_name
+     FROM courses c
+     LEFT JOIN categories cat ON cat.id = c.category_id
+     WHERE c.category_id = $1 AND c.is_active = true AND c.slug != $2
+     ORDER BY c.sort_order LIMIT $3`,
+    [categoryId, excludeSlug, limit]
+  );
 
-  let results = mapCourseRows(sameCat ?? []);
+  let results = await attachInstructors(sameCat);
 
   if (results.length < limit) {
     const need = limit - results.length;
     const existingSlugs = [excludeSlug, ...results.map((c) => c.slug)];
-    const { data: otherCat } = await supabaseAdmin
-      .from('courses')
-      .select(`
-        id, slug, code, title, short_title, image, level, duration, week_count, is_new,
-        categories ( id, slug, name ),
-        course_instructors ( is_primary, instructors ( id, slug, name, title, image ) )
-      `)
-      .eq('is_active', true)
-      .not('slug', 'in', `(${existingSlugs.map((s) => `"${s}"`).join(',')})`)
-      .order('sort_order')
-      .limit(need);
-
-    results = [...results, ...mapCourseRows(otherCat ?? [])];
+    const { rows: otherCat } = await db.query(
+      `SELECT c.id, c.slug, c.code, c.title, c.short_title, c.image, c.level, c.duration, c.week_count, c.is_new, c.sort_order, c.description,
+              cat.id as cat_id, cat.slug as cat_slug, cat.name as cat_name
+       FROM courses c
+       LEFT JOIN categories cat ON cat.id = c.category_id
+       WHERE c.is_active = true AND c.slug != ALL($1)
+       ORDER BY c.sort_order LIMIT $2`,
+      [existingSlugs, need]
+    );
+    results = [...results, ...await attachInstructors(otherCat)];
   }
 
   return results;
 }
 
-function mapCourseRows(rows: Record<string, unknown>[]): Course[] {
-  return rows.map((row) => {
-    const cat = row.categories as Record<string, unknown> | null;
-    const ciRows = (row.course_instructors as Array<{ is_primary: boolean; instructors: Record<string, unknown> }>) ?? [];
-    const primary = ciRows.find((r) => r.is_primary)?.instructors ?? ciRows[0]?.instructors;
+// Helper
+async function attachInstructors(courseRows: Record<string, unknown>[]): Promise<Course[]> {
+  if (courseRows.length === 0) return [];
+
+  const courseIds = courseRows.map((r) => r.id);
+  const { rows: ciRows } = await db.query(
+    `SELECT ci.course_id, ci.is_primary, i.id, i.slug, i.name, i.title, i.image
+     FROM course_instructors ci
+     JOIN instructors i ON i.id = ci.instructor_id
+     WHERE ci.course_id = ANY($1)`,
+    [courseIds]
+  );
+
+  const ciMap = new Map<string, Array<Record<string, unknown>>>();
+  for (const row of ciRows) {
+    if (!ciMap.has(row.course_id as string)) ciMap.set(row.course_id as string, []);
+    ciMap.get(row.course_id as string)!.push(row);
+  }
+
+  return courseRows.map((row) => {
+    const instructors = ciMap.get(row.id as string) ?? [];
+    const primary = instructors.find((r) => r.is_primary) ?? instructors[0];
     return {
-      id: row.id,
-      slug: row.slug,
-      code: row.code,
-      title: row.title,
-      short_title: row.short_title,
-      image: row.image,
-      level: row.level,
-      duration: row.duration,
-      week_count: row.week_count,
-      is_new: row.is_new,
-      sort_order: row.sort_order ?? 0,
-      description: row.description as string ?? '',
-      category: cat ? { id: cat.id as string, slug: cat.slug as string, name: cat.name as string } : undefined,
+      id: row.id as string,
+      slug: row.slug as string,
+      code: row.code as string,
+      title: row.title as string,
+      short_title: row.short_title as string,
+      image: (row.image as string) || '',
+      level: row.level as 'Temel' | 'Orta' | 'İleri',
+      duration: row.duration as string,
+      week_count: row.week_count as number,
+      description: (row.description as string) ?? '',
+      is_new: row.is_new as boolean,
+      sort_order: row.sort_order as number ?? 0,
+      category: row.cat_id ? { id: row.cat_id as string, slug: row.cat_slug as string, name: row.cat_name as string } : undefined,
       primary_instructor: primary ? {
         id: primary.id as string,
         slug: primary.slug as string,
         name: primary.name as string,
         title: primary.title as string,
-        image: primary.image as string,
+        image: primary.image as string || '',
       } : undefined,
-    } as Course;
+    };
   });
 }
 
@@ -338,17 +409,26 @@ function mapCourseRows(rows: Record<string, unknown>[]): Course[] {
 // ─────────────────────────────────────────────────────────────
 
 export async function getSiteSettings(): Promise<SiteSettings | null> {
-  const { data, error } = await supabaseAdmin
-    .from('site_settings')
-    .select('*')
-    .limit(1)
-    .single();
-
-  if (error) {
-    console.error('getSiteSettings error:', error);
-    return null;
-  }
-  return data;
+  const { rows } = await db.query('SELECT * FROM site_settings LIMIT 1');
+  if (rows.length === 0) return null;
+  
+  return {
+    id: rows[0].id as string,
+    site_name: rows[0].site_name as string,
+    site_logo: rows[0].site_logo as string,
+    tagline: rows[0].tagline as string,
+    footer_about: rows[0].footer_about as string,
+    phone: rows[0].phone as string,
+    email: rows[0].email as string,
+    address_line1: rows[0].address_line1 as string,
+    address_line2: rows[0].address_line2 as string,
+    working_hours: rows[0].working_hours as string,
+    maps_embed_url: rows[0].maps_embed_url as string,
+    linkedin_url: rows[0].linkedin_url as string,
+    instagram_url: rows[0].instagram_url as string,
+    twitter_url: rows[0].twitter_url as string,
+    youtube_url: rows[0].youtube_url as string,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -356,23 +436,37 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
 // ─────────────────────────────────────────────────────────────
 
 export async function getFaqCategories(): Promise<FaqCategory[]> {
-  const { data, error } = await supabaseAdmin
-    .from('faq_categories')
-    .select(`
-      id, slug, name, icon, sort_order,
-      faqs ( id, question, answer, sort_order )
-    `)
-    .order('sort_order');
+  const { rows: categories } = await db.query(
+    'SELECT id, slug, name, icon, sort_order FROM faq_categories ORDER BY sort_order'
+  );
 
-  if (error) {
-    console.error('getFaqCategories error:', error);
-    return [];
+  if (categories.length === 0) return [];
+
+  const catIds = categories.map((c: { id: string }) => c.id);
+  const { rows: faqs } = await db.query(
+    'SELECT id, faq_category_id, question, answer, sort_order FROM faqs WHERE faq_category_id = ANY($1) ORDER BY sort_order',
+    [catIds]
+  );
+
+  const faqMap = new Map<string, Faq[]>();
+  for (const faq of faqs) {
+    if (!faqMap.has(faq.faq_category_id as string)) faqMap.set(faq.faq_category_id as string, []);
+    faqMap.get(faq.faq_category_id as string)!.push({
+      id: faq.id as string,
+      question: faq.question as string,
+      answer: faq.answer as string,
+      sort_order: faq.sort_order as number,
+    });
   }
 
-  return (data ?? []).map((cat) => ({
-    ...cat,
-    faqs: [...(cat.faqs as Faq[])].sort((a, b) => a.sort_order - b.sort_order),
-  })) as FaqCategory[];
+  return categories.map((cat: Record<string, unknown>) => ({
+    id: cat.id as string,
+    slug: cat.slug as string,
+    name: cat.name as string,
+    icon: (cat.icon as string) || 'HelpCircle',
+    sort_order: cat.sort_order as number,
+    faqs: faqMap.get(cat.id as string) ?? [],
+  }));
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -380,15 +474,15 @@ export async function getFaqCategories(): Promise<FaqCategory[]> {
 // ─────────────────────────────────────────────────────────────
 
 export async function getAboutSections(): Promise<AboutSection[]> {
-  const { data, error } = await supabaseAdmin
-    .from('about_sections')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order');
-
-  if (error) {
-    console.error('getAboutSections error:', error);
-    return [];
-  }
-  return (data ?? []) as AboutSection[];
+  const { rows } = await db.query(
+    'SELECT * FROM about_sections WHERE is_active = true ORDER BY sort_order'
+  );
+  return rows.map((r: any) => ({
+    id: r.id,
+    section: r.section,
+    title: r.title,
+    content: r.content,
+    icon: r.icon,
+    sort_order: r.sort_order,
+  }));
 }

@@ -59,6 +59,26 @@ export interface CoursePackage {
   sort_order: number;
 }
 
+// ─────────────────────────────────────────────────────────────
+// LMS Müfredat Yapısı (Course Builder)
+// ─────────────────────────────────────────────────────────────
+export interface CourseLesson {
+  id: string;
+  title: string;
+  content_type: 'video' | 'text' | 'quiz';
+  duration_min?: number | null;
+  is_free: boolean;
+  sort_order: number;
+}
+
+export interface CourseSection {
+  id: string;
+  title: string;
+  description?: string;
+  sort_order: number;
+  lessons: CourseLesson[];
+}
+
 export interface Course {
   id: string;
   slug: string;
@@ -80,6 +100,7 @@ export interface Course {
   topics?: string[];
   prerequisites?: string[];
   packages?: CoursePackage[];
+  sections?: CourseSection[];  // LMS müfredat bölümleri
 }
 // ─────────────────────────────────────────────────────────────
 // Site Ayarları

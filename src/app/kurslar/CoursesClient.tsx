@@ -213,13 +213,15 @@ export default function CoursesClient({ courses, categoryNames, levels }: Props)
           {filteredCourses.map((course) => (
             <Link href={`/kurslar/${course.slug}`} key={course.id} className="course-card">
               <div className="course-card-img-wrap">
-                <Image
-                  src={course.image}
-                  alt={course.title}
-                  fill
-                  className="course-card-img"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                />
+                {course.image ? (
+                  <Image
+                    src={course.image}
+                    alt={course.title}
+                    fill
+                    className="course-card-img"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                ) : null}
                 <div className="course-card-overlay" />
                 <div className="course-card-badges">
                   <span className="course-card-code">{course.code}</span>
